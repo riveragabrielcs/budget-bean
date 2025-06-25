@@ -187,7 +187,7 @@ const closeModals = () => {
                         </p>
                         <button
                             @click="openAddGoalModal"
-                            class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-4 px-8 rounded-xl transition duration-200 flex items-center mx-auto shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                            class="bg-emerald-100 hover:bg-emerald-200 text-emerald-700 font-semibold py-4 px-8 rounded-xl transition duration-200 flex items-center mx-auto shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
                         >
                             <span class="mr-3 text-lg">🌱</span>
                             Plant Your First Goal
