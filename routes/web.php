@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RecurringBillController;
 use App\Http\Controllers\SavingsGoalController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -41,6 +42,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/garden/{savingsGoal}/add-savings', [SavingsGoalController::class, 'addSavings'])->name('garden.add-savings');
     Route::post('/garden/{savingsGoal}/withdraw', [SavingsGoalController::class, 'withdraw'])->name('garden.withdraw');
     Route::post('/garden/{savingsGoal}/complete', [SavingsGoalController::class, 'complete'])->name('garden.complete');
+    // Recurring Bills routes
+    Route::get('/bills', [RecurringBillController::class, 'index'])->name('bills.index');
+    Route::post('/bills', [RecurringBillController::class, 'store'])->name('bills.store');
+    Route::patch('/bills/{recurringBill}', [RecurringBillController::class, 'update'])->name('bills.update');
+    Route::delete('/bills/{recurringBill}', [RecurringBillController::class, 'destroy'])->name('bills.destroy');
 });
 
 require __DIR__.'/auth.php';

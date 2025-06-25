@@ -33,8 +33,47 @@ class DashboardController extends Controller
                 ];
             });
 
+        // Get recurring bills for this month's expenses
+        $recurringBills = $user->recurringBills()
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($bill) {
+                return [
+                    'id' => $bill->id,
+                    'name' => $bill->name,
+                    'amount' => $bill->amount,
+                    'bill_date' => $bill->bill_date,
+                    'formatted_bill_date' => $bill->formatted_bill_date,
+                    'description' => $bill->description,
+                    'type' => 'recurring_bill',
+                    'created_at' => $bill->created_at,
+                ];
+            });
+
+        // Calculate totals
+        $totalRecurringBills = $recurringBills->sum('amount');
+
+        // TODO: Add one-time expenses here when that feature is implemented
+        $oneTimeExpenses = collect([]); // Empty for now
+        $totalOneTimeExpenses = 0;
+
+        // Combine and sort all expenses by date (most recent first)
+        $allExpenses = $recurringBills->concat($oneTimeExpenses)
+            ->sortByDesc('created_at')
+            ->values();
+
+        $stats = [
+            'total_recurring_bills' => $totalRecurringBills,
+            'total_one_time_expenses' => $totalOneTimeExpenses,
+            'total_monthly_expenses' => $totalRecurringBills + $totalOneTimeExpenses,
+            'recurring_bills_count' => $recurringBills->count(),
+            'one_time_expenses_count' => $oneTimeExpenses->count(),
+        ];
+
         return Inertia::render('Dashboard', [
             'savingsGoals' => $savingsGoals,
+            'monthlyExpenses' => $allExpenses,
+            'expenseStats' => $stats,
         ]);
     }
 }

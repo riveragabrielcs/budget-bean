@@ -24,7 +24,7 @@ const showingNavigationDropdown = ref(false);
                             <div class="flex shrink-0 items-center">
                                 <Link :href="route('dashboard')" class="flex items-center group">
                                     <ApplicationLogo
-                                        class="block h-12 w-auto transition-transform group-hover:scale-105"
+                                        class="block h-16 w-16 transition-transform group-hover:scale-105"
                                     />
                                     <div class="ml-3 hidden sm:block">
                                         <span class="text-2xl font-bold text-emerald-800 tracking-tight">
@@ -66,13 +66,16 @@ const showingNavigationDropdown = ref(false);
                                     </span>
                                 </NavLink>
                                 <NavLink
-                                    :href="route('dashboard')"
-                                    :active="false"
-                                    class="px-4 py-2 rounded-lg font-medium transition-colors border-2 border-transparent text-stone-600 hover:text-emerald-700 hover:bg-emerald-50"
+                                    :href="route('bills.index')"
+                                    :active="route().current('bills.index')"
+                                    class="px-4 py-2 rounded-lg font-medium transition-colors border-2 border-transparent"
+                                    :class="route().current('bills.index')
+                                        ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                                        : 'text-stone-600 hover:text-emerald-700 hover:bg-emerald-50'"
                                 >
                                     <span class="flex items-center">
-                                        <span class="mr-2">📅</span>
-                                        Past Months
+                                        <span class="mr-2">💳</span>
+                                        My Recurring Bills
                                     </span>
                                 </NavLink>
                                 <NavLink
@@ -81,8 +84,8 @@ const showingNavigationDropdown = ref(false);
                                     class="px-4 py-2 rounded-lg font-medium transition-colors border-2 border-transparent text-stone-600 hover:text-emerald-700 hover:bg-emerald-50"
                                 >
                                     <span class="flex items-center">
-                                        <span class="mr-2">💳</span>
-                                        My Recurring Bills
+                                        <span class="mr-2">📅</span>
+                                        Past Months
                                     </span>
                                 </NavLink>
                             </div>
@@ -209,7 +212,7 @@ const showingNavigationDropdown = ref(false);
                                     : 'text-stone-600 hover:text-emerald-700 hover:bg-emerald-50'"
                             >
                                 <span class="mr-3">🏠</span>
-                                Dashboard
+                                This Month
                             </ResponsiveNavLink>
                             <ResponsiveNavLink
                                 :href="route('garden.index')"
@@ -219,10 +222,23 @@ const showingNavigationDropdown = ref(false);
                                         ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
                                         : 'text-stone-600 hover:text-emerald-700 hover:bg-emerald-50'"
                             >
-                                    <span class="flex items-center">
-                                        <span class="mr-2">🌻</span>
-                                        My Garden
-                                    </span>
+                                <span class="flex items-center">
+                                    <span class="mr-2">🌻</span>
+                                    My Garden
+                                </span>
+                            </ResponsiveNavLink>
+                            <ResponsiveNavLink
+                                :href="route('bills.index')"
+                                :active="route().current('bills.index')"
+                                class="px-4 py-2 rounded-lg font-medium transition-colors border-2 border-transparent"
+                                :class="route().current('bills.index')
+                                        ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                                        : 'text-stone-600 hover:text-emerald-700 hover:bg-emerald-50'"
+                            >
+                                <span class="flex items-center">
+                                    <span class="mr-2">💳</span>
+                                    My Recurring Bills
+                                </span>
                             </ResponsiveNavLink>
                             <ResponsiveNavLink
                                 :href="route('dashboard')"
@@ -231,14 +247,6 @@ const showingNavigationDropdown = ref(false);
                             >
                                 <span class="mr-3">📅</span>
                                 Past Months
-                            </ResponsiveNavLink>
-                            <ResponsiveNavLink
-                                :href="route('dashboard')"
-                                :active="false"
-                                class="flex items-center px-4 py-3 rounded-lg font-medium text-stone-600 hover:text-emerald-700 hover:bg-emerald-50"
-                            >
-                                <span class="mr-3">💳</span>
-                                My Expenses
                             </ResponsiveNavLink>
                         </div>
                     </div>

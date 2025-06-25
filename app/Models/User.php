@@ -72,6 +72,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the user's recurring bills.
+     */
+    public function recurringBills(): HasMany
+    {
+        return $this->hasMany(RecurringBill::class);
+    }
+
+    /**
      * Get the total amount saved across all goals.
      */
     public function getTotalSavedAttribute(): float
@@ -85,5 +93,13 @@ class User extends Authenticatable
     public function getTotalTargetAttribute(): float
     {
         return $this->activeSavingsGoals()->sum('target_amount');
+    }
+
+    /**
+     * Get the total monthly amount for recurring bills.
+     */
+    public function getTotalMonthlyBillsAttribute(): float
+    {
+        return $this->recurringBills()->sum('amount');
     }
 }

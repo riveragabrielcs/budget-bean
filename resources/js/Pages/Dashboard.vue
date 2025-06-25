@@ -6,9 +6,12 @@ import { computed } from 'vue';
 
 const props = defineProps({
     savingsGoals: Array,
+    monthlyExpenses: Array,
+    expenseStats: Object,
 });
 
 const hasGoals = computed(() => props.savingsGoals.length > 0);
+const hasExpenses = computed(() => props.monthlyExpenses.length > 0);
 
 const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
@@ -123,7 +126,9 @@ const formatCurrency = (amount) => {
                                 <span class="mr-2">📋</span>
                                 This Month's Expenses
                             </h3>
-                            <div class="text-center py-12">
+
+                            <!-- Empty State -->
+                            <div v-if="!hasExpenses" class="text-center py-12">
                                 <div class="w-20 h-20 bg-gradient-to-br from-stone-50 to-stone-100 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm border border-stone-200">
                                     <span class="text-3xl text-stone-400">🧾</span>
                                 </div>
@@ -135,10 +140,64 @@ const formatCurrency = (amount) => {
                                         <span class="mr-2">💸</span>
                                         Add One-Time Expense
                                     </button>
-                                    <button class="bg-amber-100 hover:bg-amber-200 text-amber-700 font-medium px-4 py-2 rounded-lg transition duration-200 flex items-center justify-center">
+                                    <NavLink
+                                        :href="route('bills.index')"
+                                        class="bg-amber-100 hover:bg-amber-200 text-amber-700 font-medium px-4 py-2 rounded-lg transition duration-200 flex items-center justify-center"
+                                    >
                                         <span class="mr-2">🔄</span>
                                         Add Recurring Bill
-                                    </button>
+                                    </NavLink>
+                                </div>
+                            </div>
+
+                            <!-- Expenses List and Summary -->
+                            <div v-else>
+                                <!-- Scrollable Expenses List -->
+                                <div class="space-y-3 max-h-64 overflow-y-auto pr-2 mb-6">
+                                    <div
+                                        v-for="expense in monthlyExpenses"
+                                        :key="`${expense.type}-${expense.id}`"
+                                        class="border border-emerald-100 rounded-lg p-4 hover:shadow-sm transition-shadow duration-200"
+                                    >
+                                        <div class="flex items-center justify-between mb-2">
+                                            <div class="flex items-center">
+                                                <span class="text-lg mr-3">{{ expense.type === 'recurring_bill' ? '💳' : '💸' }}</span>
+                                                <div>
+                                                    <h4 class="font-medium text-emerald-800">{{ expense.name }}</h4>
+                                                    <div class="flex items-center gap-2">
+                                    <span v-if="expense.type === 'recurring_bill'"
+                                          class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">
+                                        🔄 Recurring Bill
+                                    </span>
+                                                        <span v-if="expense.formatted_bill_date" class="text-xs text-emerald-600">
+                                        Due: {{ expense.formatted_bill_date }}
+                                    </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="text-right">
+                                                <div class="text-lg font-bold text-stone-700">{{ formatCurrency(expense.amount) }}</div>
+                                            </div>
+                                        </div>
+
+                                        <div v-if="expense.description" class="text-sm text-stone-500 mt-2">
+                                            {{ expense.description }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Always Visible Summary -->
+                                <div class="border-t border-emerald-100 pt-4">
+                                    <div class="flex justify-between items-center">
+                                        <span class="font-medium text-stone-600">Monthly Total:</span>
+                                        <span class="text-xl font-bold text-emerald-800">{{ formatCurrency(expenseStats.total_monthly_expenses) }}</span>
+                                    </div>
+                                    <div class="text-sm text-stone-500 mt-1">
+                                        {{ expenseStats.recurring_bills_count }} recurring bills
+                                        <span v-if="expenseStats.one_time_expenses_count > 0">
+                        + {{ expenseStats.one_time_expenses_count }} one-time expenses
+                    </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
