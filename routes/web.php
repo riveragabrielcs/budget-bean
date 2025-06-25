@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\MonthlyExpenseController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RecurringBillController;
 use App\Http\Controllers\SavingsGoalController;
@@ -47,6 +48,13 @@ Route::middleware('auth')->group(function () {
     Route::post('/bills', [RecurringBillController::class, 'store'])->name('bills.store');
     Route::patch('/bills/{recurringBill}', [RecurringBillController::class, 'update'])->name('bills.update');
     Route::delete('/bills/{recurringBill}', [RecurringBillController::class, 'destroy'])->name('bills.destroy');
+
+    // Monthly Expenses routes
+    Route::post('/expenses', [MonthlyExpenseController::class, 'store'])->name('expenses.store');
+    Route::post('/expenses/ajax', [MonthlyExpenseController::class, 'storeAjax'])->name('expenses.store.ajax');
+    Route::patch('/expenses/{monthlyExpense}', [MonthlyExpenseController::class, 'update'])->name('expenses.update');
+    Route::delete('/expenses/{monthlyExpense}', [MonthlyExpenseController::class, 'destroy'])->name('expenses.destroy');
+    Route::delete('/expenses/{monthlyExpense}/ajax', [MonthlyExpenseController::class, 'destroyAjax'])->name('expenses.destroy.ajax');
 });
 
 require __DIR__.'/auth.php';

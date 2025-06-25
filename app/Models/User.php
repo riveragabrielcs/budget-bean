@@ -80,6 +80,25 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the user's monthly expenses.
+     */
+    public function monthlyExpenses(): HasMany
+    {
+        return $this->hasMany(MonthlyExpense::class);
+    }
+
+    /**
+     * Get the user's monthly expenses for current month.
+     */
+    public function currentMonthExpenses(): HasMany
+    {
+        $now = now();
+        return $this->hasMany(MonthlyExpense::class)
+            ->where('budget_month', $now->month)
+            ->where('budget_year', $now->year);
+    }
+
+    /**
      * Get the total amount saved across all goals.
      */
     public function getTotalSavedAttribute(): float

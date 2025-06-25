@@ -50,14 +50,26 @@ class DashboardController extends Controller
                 ];
             });
 
+        // Get one-time expenses for this month
+        $oneTimeExpenses = $user->currentMonthExpenses()
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($expense) {
+                return [
+                    'id' => $expense->id,
+                    'name' => $expense->name,
+                    'amount' => $expense->amount,
+                    'expense_date' => $expense->expense_date,
+                    'formatted_expense_date' => $expense->formatted_expense_date,
+                    'description' => $expense->description,
+                    'type' => 'one_time_expense',
+                    'created_at' => $expense->created_at,
+                ];
+            });
+
         // Calculate totals
         $totalRecurringBills = $recurringBills->sum('amount');
-
-        // TODO: Add one-time expenses here when that feature is implemented
-        $oneTimeExpenses = collect([]); // Empty for now
-        $totalOneTimeExpenses = 0;
-
-        // Combine and sort all expenses by date (most recent first)
+        $totalOneTimeExpenses = $oneTimeExpenses->sum('amount');
         $allExpenses = $recurringBills->concat($oneTimeExpenses)
             ->sortByDesc('created_at')
             ->values();
