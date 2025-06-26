@@ -82,10 +82,26 @@ class DashboardController extends Controller
             'one_time_expenses_count' => $oneTimeExpenses->count(),
         ];
 
+        // Get current month's revenue
+        $currentRevenue = $user->currentMonthRevenue();
+        $revenueData = null;
+
+        if ($currentRevenue) {
+            $revenueData = [
+                'total_revenue' => $currentRevenue->total_revenue,
+                'calculation_method' => $currentRevenue->calculation_method,
+                'paycheck_amount' => $currentRevenue->paycheck_amount,
+                'paycheck_count' => $currentRevenue->paycheck_count,
+                'source_description' => $currentRevenue->source_description,
+                'revenue_period' => $currentRevenue->revenue_period,
+            ];
+        }
+
         return Inertia::render('Dashboard', [
             'savingsGoals' => $savingsGoals,
             'monthlyExpenses' => $allExpenses,
             'expenseStats' => $stats,
+            'currentRevenue' => $revenueData,
         ]);
     }
 }

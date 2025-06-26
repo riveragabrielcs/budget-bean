@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MonthlyExpenseController;
+use App\Http\Controllers\MonthlyRevenueController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RecurringBillController;
 use App\Http\Controllers\SavingsGoalController;
@@ -55,6 +56,12 @@ Route::middleware('auth')->group(function () {
     Route::patch('/expenses/{monthlyExpense}', [MonthlyExpenseController::class, 'update'])->name('expenses.update');
     Route::delete('/expenses/{monthlyExpense}', [MonthlyExpenseController::class, 'destroy'])->name('expenses.destroy');
     Route::delete('/expenses/{monthlyExpense}/ajax', [MonthlyExpenseController::class, 'destroyAjax'])->name('expenses.destroy.ajax');
+
+    // Monthly Revenue routes
+    Route::post('/revenue', [MonthlyRevenueController::class, 'store'])->name('revenue.store');
+    Route::post('/revenue/ajax', [MonthlyRevenueController::class, 'storeAjax'])->name('revenue.store.ajax');
+    Route::get('/revenue/current', [MonthlyRevenueController::class, 'getCurrent'])->name('revenue.current');
+    Route::delete('/revenue', [MonthlyRevenueController::class, 'destroy'])->name('revenue.destroy');
 });
 
 require __DIR__.'/auth.php';

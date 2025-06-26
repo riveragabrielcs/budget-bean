@@ -2,16 +2,18 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import NavLink from '@/Components/NavLink.vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 const props = defineProps({
     savingsGoals: Array,
     monthlyExpenses: Array,
     expenseStats: Object,
+    currentRevenue: Object,
 });
 
-// Modal state
+// Modal states
 const showAddExpenseModal = ref(false);
+const showRevenueModal = ref(false);
 
 // Form for adding one-time expenses
 const addExpenseForm = useForm({
@@ -21,8 +23,39 @@ const addExpenseForm = useForm({
     expense_date: '',
 });
 
+// Form for revenue
+const revenueForm = useForm({
+    calculation_method: 'custom',
+    total_revenue: '',
+    paycheck_amount: '',
+    paycheck_count: '',
+});
+
+// Computed properties
 const hasGoals = computed(() => props.savingsGoals.length > 0);
 const hasExpenses = computed(() => props.monthlyExpenses.length > 0);
+const hasRevenue = computed(() => props.currentRevenue !== null);
+
+const calculatedTotal = computed(() => {
+    if (revenueForm.calculation_method === 'paycheck' && revenueForm.paycheck_amount && revenueForm.paycheck_count) {
+        return (parseFloat(revenueForm.paycheck_amount) * parseInt(revenueForm.paycheck_count)).toFixed(2);
+    }
+    return '0.00';
+});
+
+// Watch for calculation method changes
+watch(() => revenueForm.calculation_method, (newMethod) => {
+    if (newMethod === 'paycheck') {
+        revenueForm.total_revenue = calculatedTotal.value;
+    }
+});
+
+// Watch for paycheck calculations
+watch([() => revenueForm.paycheck_amount, () => revenueForm.paycheck_count], () => {
+    if (revenueForm.calculation_method === 'paycheck') {
+        revenueForm.total_revenue = calculatedTotal.value;
+    }
+});
 
 // Methods
 const openAddExpenseModal = () => {
@@ -31,11 +64,35 @@ const openAddExpenseModal = () => {
     showAddExpenseModal.value = true;
 };
 
+const openRevenueModal = () => {
+    revenueForm.reset();
+
+    // Pre-fill with existing revenue data if available
+    if (props.currentRevenue) {
+        revenueForm.calculation_method = props.currentRevenue.calculation_method;
+        revenueForm.total_revenue = props.currentRevenue.total_revenue;
+        revenueForm.paycheck_amount = props.currentRevenue.paycheck_amount || '';
+        revenueForm.paycheck_count = props.currentRevenue.paycheck_count || '';
+    } else {
+        revenueForm.calculation_method = 'custom';
+    }
+
+    showRevenueModal.value = true;
+};
+
 const submitAddExpense = () => {
     addExpenseForm.post(route('expenses.store'), {
         onSuccess: () => {
             showAddExpenseModal.value = false;
             addExpenseForm.reset();
+        },
+    });
+};
+
+const submitRevenue = () => {
+    revenueForm.post(route('revenue.store'), {
+        onSuccess: () => {
+            showRevenueModal.value = false;
         },
     });
 };
@@ -53,9 +110,11 @@ const deleteExpense = (expense) => {
     }
 };
 
-const closeModal = () => {
+const closeModals = () => {
     showAddExpenseModal.value = false;
+    showRevenueModal.value = false;
     addExpenseForm.reset();
+    revenueForm.reset();
 };
 
 const formatCurrency = (amount) => {
@@ -110,7 +169,7 @@ const formatCurrency = (amount) => {
 
                 <!-- Quick Stats Grid -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <!-- This Month Card -->
+                    <!-- This Month's Revenue Card -->
                     <div class="bg-white overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-200 sm:rounded-xl border border-emerald-100">
                         <div class="p-6">
                             <div class="flex items-center">
@@ -119,9 +178,14 @@ const formatCurrency = (amount) => {
                                         <span class="text-emerald-600 text-lg">📊</span>
                                     </div>
                                 </div>
-                                <dl class="ml-4">
+                                <dl class="ml-4 flex-1">
                                     <dt class="text-sm font-medium text-stone-500 uppercase tracking-wide">This Month's Revenue</dt>
-                                    <dd class="text-3xl font-bold text-emerald-800 mt-1">$0.00</dd>
+                                    <dd class="text-3xl font-bold text-emerald-800 mt-1">
+                                        {{ hasRevenue ? formatCurrency(currentRevenue.total_revenue) : '$0.00' }}
+                                    </dd>
+                                    <div v-if="hasRevenue && currentRevenue.source_description" class="text-xs text-emerald-600 mt-1">
+                                        {{ currentRevenue.source_description }}
+                                    </div>
                                 </dl>
                             </div>
                         </div>
@@ -316,7 +380,7 @@ const formatCurrency = (amount) => {
                             </div>
 
                             <!-- Goals List -->
-                            <div v-else class="space-y-4 max-h-96 overflow-y-auto pr-2">
+                            <div v-else class="space-y-4 max-h-80 overflow-y-auto pr-2">
                                 <div
                                     v-for="goal in savingsGoals"
                                     :key="goal.id"
@@ -360,15 +424,18 @@ const formatCurrency = (amount) => {
 
                 <!-- Action Buttons -->
                 <div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-                    <button class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-4 px-8 rounded-xl transition duration-200 flex items-center justify-center shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+                    <button
+                        @click="openRevenueModal"
+                        class="bg-emerald-100 hover:bg-emerald-200 text-emerald-700 font-semibold py-4 px-8 rounded-xl transition duration-200 flex items-center justify-center shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                    >
                         <span class="mr-3 text-lg">📊</span>
-                        Update Revenue
+                        {{ hasRevenue ? 'Update Revenue' : 'Set Revenue' }}
                     </button>
-                    <button class="bg-amber-500 hover:bg-amber-600 text-white font-semibold py-4 px-8 rounded-xl transition duration-200 flex items-center justify-center shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+                    <button class="bg-amber-100 hover:bg-amber-200 text-amber-700 font-semibold py-4 px-8 rounded-xl transition duration-200 flex items-center justify-center shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
                         <span class="mr-3 text-lg">🎯</span>
                         Change Budget
                     </button>
-                    <button class="bg-green-500 hover:bg-green-600 text-white font-semibold py-4 px-8 rounded-xl transition duration-200 flex items-center justify-center shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+                    <button class="bg-green-100 hover:bg-green-200 text-green-700 font-semibold py-4 px-8 rounded-xl transition duration-200 flex items-center justify-center shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
                         <span class="mr-3 text-lg">🏆</span>
                         Change Savings Goal
                     </button>
@@ -386,7 +453,7 @@ const formatCurrency = (amount) => {
                         <span class="mr-2">💸</span>
                         Add One-Time Expense
                     </h3>
-                    <button @click="closeModal" class="text-stone-400 hover:text-stone-600">
+                    <button @click="closeModals" class="text-stone-400 hover:text-stone-600">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
@@ -447,7 +514,7 @@ const formatCurrency = (amount) => {
                     <div class="flex gap-3 pt-4">
                         <button
                             type="button"
-                            @click="closeModal"
+                            @click="closeModals"
                             class="flex-1 bg-stone-100 hover:bg-stone-200 text-stone-700 font-medium py-3 px-4 rounded-lg transition duration-200"
                         >
                             Cancel
@@ -459,6 +526,133 @@ const formatCurrency = (amount) => {
                         >
                             <span v-if="addExpenseForm.processing">Adding...</span>
                             <span v-else>💸 Add Expense</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Revenue Modal -->
+    <div v-if="showRevenueModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-md w-full">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-semibold text-emerald-800 flex items-center">
+                        <span class="mr-2">📊</span>
+                        {{ hasRevenue ? 'Update Monthly Revenue' : 'Set Monthly Revenue' }}
+                    </h3>
+                    <button @click="closeModals" class="text-stone-400 hover:text-stone-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <form @submit.prevent="submitRevenue" class="space-y-4">
+                    <!-- Calculation Method -->
+                    <div>
+                        <label class="block text-sm font-medium text-stone-700 mb-3">How would you like to calculate your revenue?</label>
+                        <div class="space-y-3">
+                            <label class="flex items-center cursor-pointer">
+                                <input
+                                    v-model="revenueForm.calculation_method"
+                                    type="radio"
+                                    value="paycheck"
+                                    class="text-emerald-500 focus:ring-emerald-500 cursor-pointer"
+                                />
+                                <span class="ml-3 text-sm text-stone-700">💰 Paycheck Calculator</span>
+                            </label>
+                            <label class="flex items-center cursor-pointer">
+                                <input
+                                    v-model="revenueForm.calculation_method"
+                                    type="radio"
+                                    value="custom"
+                                    class="text-emerald-500 focus:ring-emerald-500 cursor-pointer"
+                                />
+                                <span class="ml-3 text-sm text-stone-700">✏️ Custom Amount</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Paycheck Method -->
+                    <div v-if="revenueForm.calculation_method === 'paycheck'" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-stone-700 mb-2">Paycheck Amount *</label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-3 text-stone-500">$</span>
+                                <input
+                                    v-model="revenueForm.paycheck_amount"
+                                    type="number"
+                                    step="0.01"
+                                    min="0.01"
+                                    placeholder="2500.00"
+                                    class="w-full pl-8 pr-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                    required
+                                />
+                            </div>
+                            <div v-if="revenueForm.errors.paycheck_amount" class="text-red-600 text-sm mt-1">{{ revenueForm.errors.paycheck_amount }}</div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-stone-700 mb-2">Number of Paychecks This Month *</label>
+                            <input
+                                v-model="revenueForm.paycheck_count"
+                                type="number"
+                                min="1"
+                                max="10"
+                                placeholder="2"
+                                class="w-full px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                required
+                            />
+                            <div v-if="revenueForm.errors.paycheck_count" class="text-red-600 text-sm mt-1">{{ revenueForm.errors.paycheck_count }}</div>
+                        </div>
+
+                        <!-- Live Calculation Preview -->
+                        <div v-if="revenueForm.paycheck_amount && revenueForm.paycheck_count" class="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm font-medium text-emerald-700">Total Revenue:</span>
+                                <span class="text-lg font-bold text-emerald-800">{{ formatCurrency(calculatedTotal) }}</span>
+                            </div>
+                            <div class="text-xs text-emerald-600 mt-1">
+                                {{ revenueForm.paycheck_count }} paychecks × {{ formatCurrency(revenueForm.paycheck_amount) }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Custom Method -->
+                    <div v-if="revenueForm.calculation_method === 'custom'">
+                        <label class="block text-sm font-medium text-stone-700 mb-2">Total Monthly Revenue *</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-3 text-stone-500">$</span>
+                            <input
+                                v-model="revenueForm.total_revenue"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                placeholder="5000.00"
+                                class="w-full pl-8 pr-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                required
+                            />
+                        </div>
+                        <div v-if="revenueForm.errors.total_revenue" class="text-red-600 text-sm mt-1">{{ revenueForm.errors.total_revenue }}</div>
+                    </div>
+
+                    <div class="flex gap-3 pt-4">
+                        <button
+                            type="button"
+                            @click="closeModals"
+                            class="flex-1 bg-stone-100 hover:bg-stone-200 text-stone-700 font-medium py-3 px-4 rounded-lg transition duration-200"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            :disabled="revenueForm.processing"
+                            class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-3 px-4 rounded-lg transition duration-200 disabled:opacity-50"
+                        >
+                            <span v-if="revenueForm.processing">Saving...</span>
+                            <span v-else>📊 {{ hasRevenue ? 'Update' : 'Set' }} Revenue</span>
                         </button>
                     </div>
                 </form>

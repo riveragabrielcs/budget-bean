@@ -99,6 +99,26 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the user's monthly revenues.
+     */
+    public function monthlyRevenues(): HasMany
+    {
+        return $this->hasMany(MonthlyRevenue::class);
+    }
+
+    /**
+     * Get the user's current month revenue.
+     */
+    public function currentMonthRevenue(): ?MonthlyRevenue
+    {
+        $now = now();
+        return $this->hasMany(MonthlyRevenue::class)
+            ->where('revenue_month', $now->month)
+            ->where('revenue_year', $now->year)
+            ->first();
+    }
+
+    /**
      * Get the total amount saved across all goals.
      */
     public function getTotalSavedAttribute(): float
