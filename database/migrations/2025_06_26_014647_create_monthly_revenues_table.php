@@ -14,10 +14,11 @@ return new class extends Migration
         Schema::create('monthly_revenues', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->decimal('total_revenue', 10, 2);
+            $table->decimal('total_revenue', 10, 2)->default(0);
             $table->enum('calculation_method', ['paycheck', 'custom'])->default('custom');
             $table->decimal('paycheck_amount', 10, 2)->nullable();
             $table->integer('paycheck_count')->nullable();
+            $table->decimal('monthly_savings_goal', 10, 2)->default(0);
             $table->integer('revenue_month'); // 1-12
             $table->integer('revenue_year'); // e.g., 2025
             $table->timestamps();

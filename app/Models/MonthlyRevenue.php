@@ -21,6 +21,7 @@ class MonthlyRevenue extends Model
         'calculation_method',
         'paycheck_amount',
         'paycheck_count',
+        'monthly_savings_goal',
         'revenue_month',
         'revenue_year',
     ];
@@ -35,6 +36,7 @@ class MonthlyRevenue extends Model
         return [
             'total_revenue' => 'decimal:2',
             'paycheck_amount' => 'decimal:2',
+            'monthly_savings_goal' => 'decimal:2',
             'paycheck_count' => 'integer',
             'revenue_month' => 'integer',
             'revenue_year' => 'integer',
@@ -117,5 +119,45 @@ class MonthlyRevenue extends Model
             ->monthlyRevenues()
             ->forRevenuePeriod($now->month, $now->year)
             ->first();
+    }
+
+    /**
+     * Get the calculated monthly budget (Revenue - Savings Goal).
+     */
+    public function getMonthlyBudgetAttribute(): float
+    {
+        return max($this->total_revenue - ($this->monthly_savings_goal ?? 0), 0);
+    }
+
+    /**
+     * Calculate budget remaining after expenses.
+     */
+    public function getBudgetRemainingAttribute(): float
+    {
+        $user = $this->user;
+        $currentExpenses = $user->recurringBills()->sum('amount') +
+            $user->currentMonthExpenses()->sum('amount');
+
+        return $this->monthly_budget - $currentExpenses;
+    }
+
+    /**
+     * Get potential water bank amount (all unspent money).
+     */
+    public function getPotentialWaterBankAttribute(): float
+    {
+        $user = $this->user;
+        $currentExpenses = $user->recurringBills()->sum('amount') +
+            $user->currentMonthExpenses()->sum('amount');
+
+        return max($this->total_revenue - $currentExpenses, 0);
+    }
+
+    /**
+     * Check if budget is negative (drought mode).
+     */
+    public function getIsDroughtAttribute(): bool
+    {
+        return $this->budget_remaining < 0;
     }
 }

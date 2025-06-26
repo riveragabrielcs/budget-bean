@@ -85,6 +85,7 @@ class DashboardController extends Controller
         // Get current month's revenue
         $currentRevenue = $user->currentMonthRevenue();
         $revenueData = null;
+        $budgetData = null;
 
         if ($currentRevenue) {
             $revenueData = [
@@ -92,8 +93,24 @@ class DashboardController extends Controller
                 'calculation_method' => $currentRevenue->calculation_method,
                 'paycheck_amount' => $currentRevenue->paycheck_amount,
                 'paycheck_count' => $currentRevenue->paycheck_count,
+                'monthly_savings_goal' => $currentRevenue->monthly_savings_goal,
                 'source_description' => $currentRevenue->source_description,
                 'revenue_period' => $currentRevenue->revenue_period,
+            ];
+
+            $budgetData = [
+                'monthly_budget' => $currentRevenue->monthly_budget,
+                'budget_remaining' => $currentRevenue->budget_remaining,
+                'potential_water_bank' => $currentRevenue->potential_water_bank,
+                'is_drought' => $currentRevenue->is_drought,
+            ];
+        } else {
+            // Default values when no revenue is set
+            $budgetData = [
+                'monthly_budget' => 0,
+                'budget_remaining' => -$stats['total_monthly_expenses'],
+                'potential_water_bank' => 0,
+                'is_drought' => $stats['total_monthly_expenses'] > 0,
             ];
         }
 
@@ -102,6 +119,7 @@ class DashboardController extends Controller
             'monthlyExpenses' => $allExpenses,
             'expenseStats' => $stats,
             'currentRevenue' => $revenueData,
+            'budgetData' => $budgetData,
         ]);
     }
 }

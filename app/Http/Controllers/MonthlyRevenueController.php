@@ -35,6 +35,30 @@ class MonthlyRevenueController extends Controller
     }
 
     /**
+     * Update savings goal for current month.
+     */
+    public function updateSavingsGoal(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'monthly_savings_goal' => 'required|numeric|min:0|max:9999999.99',
+        ]);
+
+        $currentRevenue = MonthlyRevenue::getCurrentMonthRevenue();
+
+        if ($currentRevenue) {
+            $currentRevenue->update($validated);
+        } else {
+            // Create new record with just savings goal
+            MonthlyRevenue::setForCurrentMonth(array_merge($validated, [
+                'total_revenue' => 0,
+                'calculation_method' => 'custom',
+            ]));
+        }
+
+        return redirect()->route('dashboard')->with('success', 'Your savings goal has been updated! 🏆');
+    }
+
+    /**
      * Store or update monthly revenue via AJAX.
      */
     public function storeAjax(Request $request): JsonResponse

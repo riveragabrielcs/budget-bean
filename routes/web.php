@@ -61,6 +61,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/revenue', [MonthlyRevenueController::class, 'store'])->name('revenue.store');
     Route::post('/revenue/ajax', [MonthlyRevenueController::class, 'storeAjax'])->name('revenue.store.ajax');
     Route::get('/revenue/current', [MonthlyRevenueController::class, 'getCurrent'])->name('revenue.current');
+    Route::patch('/revenue/savings-goal', [MonthlyRevenueController::class, 'updateSavingsGoal'])->name('revenue.savings-goal');
     Route::delete('/revenue', [MonthlyRevenueController::class, 'destroy'])->name('revenue.destroy');
 });
 
