@@ -128,6 +128,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the user's completed months.
+     */
+    public function completedMonths(): HasMany
+    {
+        return $this->hasMany(CompletedMonth::class);
+    }
+
+    /**
      * Get or create the user's water bank.
      */
     public function getOrCreateWaterBank(): WaterBank

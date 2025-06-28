@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CompletedMonth;
 use App\Models\MonthlyRevenue;
 use App\Models\SavingsGoal;
 use App\Models\WaterBank;
@@ -12,33 +13,54 @@ use Illuminate\Http\JsonResponse;
 class WaterBankController extends Controller
 {
     /**
-     * End the current month and transfer potential water to usable water bank.
+     * End the specified month and transfer potential water to usable water bank.
      */
-    public function endMonth(): RedirectResponse
+    public function endMonth(Request $request): RedirectResponse
     {
+        $validated = $request->validate([
+            'month' => 'required|integer|min:1|max:12',
+            'year' => 'required|integer|min:2020|max:2030',
+            'override_existing' => 'sometimes|boolean',
+        ]);
+
         $user = auth()->user();
-        $currentRevenue = $user->currentMonthRevenue();
+        $month = $validated['month'];
+        $year = $validated['year'];
+        $overrideExisting = $validated['override_existing'] ?? false;
 
-        if (!$currentRevenue) {
-            return redirect()->route('dashboard')->with('error', 'No revenue data found for this month.');
+        // Validation: No future months
+        $targetDate = now()->setYear($year)->setMonth($month)->startOfMonth();
+        if ($targetDate->isFuture()) {
+            return back()->with('error', 'Cannot complete a future month! 📅');
         }
 
-        $potentialWater = $currentRevenue->potential_water_bank;
+        try {
+            // Create completed month record (this handles duplicate checking)
+            $completedMonth = CompletedMonth::createFromCurrentMonth($user, $month, $year, $overrideExisting);
 
-        if ($potentialWater <= 0) {
-            return redirect()->route('dashboard')->with('info', 'No water to deposit - you spent everything this month! 🏜️');
+            // Get current revenue to calculate water
+            $currentRevenue = $user->currentMonthRevenue();
+            $waterToAdd = $completedMonth->water_collected;
+
+            // Add water to bank if there's any to add
+            if ($waterToAdd > 0) {
+                $waterBank = WaterBank::getOrCreateForUser($user->id);
+                $description = "Month-end deposit from {$completedMonth->month_period}";
+                $waterBank->addWater($waterToAdd, 'month_end', $description);
+            }
+
+            // Reset the month: Clear one-time expenses but keep everything else
+            $user->currentMonthExpenses()->delete();
+
+            $message = $waterToAdd > 0
+                ? "Completed {$completedMonth->month_period}! Added " . number_format($waterToAdd, 2) . " to your Water Bank! 💧"
+                : "Completed {$completedMonth->month_period}! No water to collect this time. 🏜️";
+
+            return redirect()->route('past-months.index')->with('success', $message);
+
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
         }
-
-        // Get or create water bank
-        $waterBank = WaterBank::getOrCreateForUser($user->id);
-
-        // Add water with description
-        $description = "Month-end deposit from " . now()->format('F Y');
-        $transaction = $waterBank->addWater($potentialWater, 'month_end', $description);
-
-        $message = "Added " . number_format($potentialWater, 2) . " to your Water Bank! 💧 Total: $" . $waterBank->formatted_balance;
-
-        return redirect()->route('garden.index')->with('success', $message);
     }
 
     /**

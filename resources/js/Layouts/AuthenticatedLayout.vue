@@ -79,9 +79,12 @@ const showingNavigationDropdown = ref(false);
                                     </span>
                                 </NavLink>
                                 <NavLink
-                                    :href="route('dashboard')"
-                                    :active="false"
-                                    class="px-4 py-2 rounded-lg font-medium transition-colors border-2 border-transparent text-stone-600 hover:text-emerald-700 hover:bg-emerald-50"
+                                    :href="route('past-months.index')"
+                                    :active="route().current('past-months.*')"
+                                    class="px-4 py-2 rounded-lg font-medium transition-colors border-2 border-transparent"
+                                    :class="route().current('past-months.*')
+                                        ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                                        : 'text-stone-600 hover:text-emerald-700 hover:bg-emerald-50'"
                                 >
                                     <span class="flex items-center">
                                         <span class="mr-2">📅</span>
@@ -241,9 +244,12 @@ const showingNavigationDropdown = ref(false);
                                 </span>
                             </ResponsiveNavLink>
                             <ResponsiveNavLink
-                                :href="route('dashboard')"
-                                :active="false"
+                                :href="route('past-months.index')"
+                                :active="route().current('past-months.index')"
                                 class="flex items-center px-4 py-3 rounded-lg font-medium text-stone-600 hover:text-emerald-700 hover:bg-emerald-50"
+                                :class="route().current('past-months.index')
+                                        ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                                        : 'text-stone-600 hover:text-emerald-700 hover:bg-emerald-50'"
                             >
                                 <span class="mr-3">📅</span>
                                 Past Months

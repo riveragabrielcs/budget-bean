@@ -16,6 +16,7 @@ const props = defineProps({
 const showAddExpenseModal = ref(false);
 const showRevenueModal = ref(false);
 const showSavingsGoalModal = ref(false);
+const showEndMonthModal = ref(false);
 
 // Form for adding one-time expenses
 const addExpenseForm = useForm({
@@ -36,6 +37,13 @@ const revenueForm = useForm({
 // Form for savings goal
 const savingsGoalForm = useForm({
     monthly_savings_goal: '',
+});
+
+// Form for ending month
+const endMonthForm = useForm({
+    month: '',
+    year: '',
+    override_existing: false,
 });
 
 // Computed properties
@@ -60,6 +68,11 @@ const budgetStatus = computed(() => {
     return 'positive';
 });
 
+// End month modal state
+const monthExists = ref(false);
+const showOverrideConfirmation = ref(false);
+const overrideText = ref('');
+
 // Watch for calculation method changes
 watch(() => revenueForm.calculation_method, (newMethod) => {
     if (newMethod === 'paycheck') {
@@ -72,6 +85,11 @@ watch([() => revenueForm.paycheck_amount, () => revenueForm.paycheck_count], () 
     if (revenueForm.calculation_method === 'paycheck') {
         revenueForm.total_revenue = calculatedTotal.value;
     }
+});
+
+// Watch for month/year changes in end month form
+watch([() => endMonthForm.month, () => endMonthForm.year], () => {
+    checkIfMonthExists();
 });
 
 // Methods
@@ -108,6 +126,51 @@ const openSavingsGoalModal = () => {
     showSavingsGoalModal.value = true;
 };
 
+const openEndMonthModal = () => {
+    endMonthForm.reset();
+
+    // Pre-fill with current month/year
+    const now = new Date();
+    endMonthForm.month = now.getMonth() + 1; // JavaScript months are 0-indexed
+    endMonthForm.year = now.getFullYear();
+
+    monthExists.value = false;
+    showOverrideConfirmation.value = false;
+    overrideText.value = '';
+
+    showEndMonthModal.value = true;
+
+    // Check if current month already exists
+    checkIfMonthExists();
+};
+
+const checkIfMonthExists = async () => {
+    if (!endMonthForm.month || !endMonthForm.year) return;
+
+    try {
+        // Use a GET request instead of POST to avoid CSRF issues
+        const response = await fetch(`/past-months/check-exists?month=${endMonthForm.month}&year=${endMonthForm.year}`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+
+        const data = await response.json();
+        monthExists.value = data.exists;
+        showOverrideConfirmation.value = false;
+        overrideText.value = '';
+    } catch (error) {
+        console.error('Error checking month existence:', error);
+        monthExists.value = false;
+    }
+};
+
 const submitAddExpense = () => {
     addExpenseForm.post(route('expenses.store'), {
         onSuccess: () => {
@@ -133,29 +196,31 @@ const submitSavingsGoal = () => {
     });
 };
 
-const deleteExpense = (expense) => {
-    if (confirm(`Are you sure you want to delete "${expense.name}"? This action cannot be undone.`)) {
-        router.delete(route('expenses.destroy', expense.id), {
-            onSuccess: () => {
-                // Success message will be shown via flash message
-            },
-            onError: () => {
-                alert('Failed to delete expense. Please try again.');
-            }
-        });
+const handleEndMonth = () => {
+    if (monthExists.value && !showOverrideConfirmation.value) {
+        showOverrideConfirmation.value = true;
+        return;
     }
+
+    if (monthExists.value && overrideText.value !== 'OVERRIDE') {
+        return; // Don't submit if override text is wrong
+    }
+
+    endMonthForm.override_existing = monthExists.value;
+    endMonthForm.post(route('water-bank.end-month'), {
+        onSuccess: () => {
+            showEndMonthModal.value = false;
+            endMonthForm.reset();
+        },
+        onError: () => {
+            // Error handling is managed by the flash messages
+        }
+    });
 };
 
-const endMonth = () => {
-    if (confirm('End this month and transfer your unspent money to the Water Bank? This will make the water available for watering your plants!')) {
-        router.post(route('water-bank.end-month'), {}, {
-            onSuccess: () => {
-                // Will redirect to garden page with success message
-            },
-            onError: () => {
-                alert('Failed to end month. Please try again.');
-            }
-        });
+const deleteExpense = (expense) => {
+    if (confirm(`Are you sure you want to delete "${expense.name}"? This action cannot be undone.`)) {
+        router.delete(route('expenses.destroy', expense.id));
     }
 };
 
@@ -163,9 +228,14 @@ const closeModals = () => {
     showAddExpenseModal.value = false;
     showRevenueModal.value = false;
     showSavingsGoalModal.value = false;
+    showEndMonthModal.value = false;
     addExpenseForm.reset();
     revenueForm.reset();
     savingsGoalForm.reset();
+    endMonthForm.reset();
+    monthExists.value = false;
+    showOverrideConfirmation.value = false;
+    overrideText.value = '';
 };
 
 const formatCurrency = (amount) => {
@@ -173,6 +243,14 @@ const formatCurrency = (amount) => {
         style: 'currency',
         currency: 'USD',
     }).format(amount);
+};
+
+const getMonthName = (monthNumber) => {
+    const months = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return months[monthNumber - 1];
 };
 </script>
 
@@ -488,7 +566,7 @@ const formatCurrency = (amount) => {
                                 </div>
                                 <div class="flex justify-center">
                                     <button
-                                        @click="endMonth"
+                                        @click="openEndMonthModal"
                                         class="bg-cyan-500 hover:bg-cyan-600 text-white font-medium px-4 py-2 rounded-lg transition duration-200 flex items-center"
                                     >
                                         <span class="mr-2">🏁</span>
@@ -499,12 +577,21 @@ const formatCurrency = (amount) => {
 
                             <!-- Drought Warning -->
                             <div v-else-if="budgetData?.is_drought" class="mb-6 p-4 bg-gradient-to-br from-red-50 to-orange-50 border border-red-200 rounded-lg">
-                                <div class="flex items-center">
-                                    <span class="text-2xl mr-3">🏜️</span>
-                                    <div>
-                                        <h4 class="font-semibold text-red-800">Drought Mode</h4>
-                                        <p class="text-xs text-red-600">No water available - you've overspent this month</p>
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center">
+                                        <span class="text-2xl mr-3">🏜️</span>
+                                        <div>
+                                            <h4 class="font-semibold text-red-800">Drought Mode</h4>
+                                            <p class="text-xs text-red-600">No water available - you've overspent this month</p>
+                                        </div>
                                     </div>
+                                    <button
+                                        @click="openEndMonthModal"
+                                        class="bg-red-500 hover:bg-red-600 text-white font-medium px-4 py-2 rounded-lg transition duration-200 flex items-center text-sm"
+                                    >
+                                        <span class="mr-2">🏁</span>
+                                        End Month
+                                    </button>
                                 </div>
                             </div>
 
@@ -789,7 +876,7 @@ const formatCurrency = (amount) => {
                             class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-3 px-4 rounded-lg transition duration-200 disabled:opacity-50"
                         >
                             <span v-if="revenueForm.processing">Saving...</span>
-                            <span v-else">📊 {{ hasRevenue ? 'Update' : 'Set' }} Revenue</span>
+                            <span v-else>📊 {{ hasRevenue ? 'Update' : 'Set' }} Revenue</span>
                         </button>
                     </div>
                 </form>
@@ -865,6 +952,124 @@ const formatCurrency = (amount) => {
                         >
                             <span v-if="savingsGoalForm.processing">Saving...</span>
                             <span v-else>🏆 {{ hasSavingsGoal ? 'Update' : 'Set' }} Goal</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- End Month Modal -->
+    <div v-if="showEndMonthModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-md w-full">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-semibold text-emerald-800 flex items-center">
+                        <span class="mr-2">🏁</span>
+                        End Month & Collect Water
+                    </h3>
+                    <button @click="closeModals" class="text-stone-400 hover:text-stone-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="mb-6 p-4 bg-cyan-50 border border-cyan-200 rounded-lg">
+                    <h4 class="font-medium text-cyan-800 mb-2">What happens when you end a month?</h4>
+                    <ul class="text-sm text-cyan-700 space-y-1">
+                        <li>• Your unspent money goes to the Water Bank 💧</li>
+                        <li>• One-time expenses are cleared 🗑️</li>
+                        <li>• Recurring bills and goals stay for next month ✅</li>
+                        <li>• Fresh start for tracking new expenses 🌱</li>
+                    </ul>
+                </div>
+
+                <form @submit.prevent="handleEndMonth" class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-stone-700 mb-2">Month *</label>
+                            <select
+                                v-model="endMonthForm.month"
+                                class="w-full px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                required
+                            >
+                                <option value="">Select month...</option>
+                                <option v-for="month in 12" :key="month" :value="month">
+                                    {{ getMonthName(month) }}
+                                </option>
+                            </select>
+                            <div v-if="endMonthForm.errors.month" class="text-red-600 text-sm mt-1">{{ endMonthForm.errors.month }}</div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-stone-700 mb-2">Year *</label>
+                            <select
+                                v-model="endMonthForm.year"
+                                class="w-full px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                required
+                            >
+                                <option value="">Select year...</option>
+                                <option v-for="year in [2023, 2024, 2025, 2026]" :key="year" :value="year">
+                                    {{ year }}
+                                </option>
+                            </select>
+                            <div v-if="endMonthForm.errors.year" class="text-red-600 text-sm mt-1">{{ endMonthForm.errors.year }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Month Already Exists Warning -->
+                    <div v-if="monthExists && !showOverrideConfirmation" class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                        <div class="flex items-center mb-3">
+                            <span class="text-amber-600 text-xl mr-3">⚠️</span>
+                            <div>
+                                <h4 class="font-medium text-amber-800">Month Already Completed</h4>
+                                <p class="text-sm text-amber-700">
+                                    {{ getMonthName(endMonthForm.month) }} {{ endMonthForm.year }} has already been recorded.
+                                </p>
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            @click="showOverrideConfirmation = true"
+                            class="bg-amber-100 hover:bg-amber-200 text-amber-700 font-medium px-4 py-2 rounded-lg transition duration-200"
+                        >
+                            Override Previous Record
+                        </button>
+                    </div>
+
+                    <!-- Override Confirmation -->
+                    <div v-if="showOverrideConfirmation" class="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <h4 class="font-medium text-red-800 mb-3">⚠️ Override Confirmation Required</h4>
+                        <p class="text-sm text-red-700 mb-4">
+                            You will lose all previous data for {{ getMonthName(endMonthForm.month) }} {{ endMonthForm.year }}.
+                            Type <strong>OVERRIDE</strong> to confirm:
+                        </p>
+                        <input
+                            v-model="overrideText"
+                            type="text"
+                            placeholder="Type OVERRIDE to confirm"
+                            class="w-full px-4 py-3 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                        />
+                    </div>
+
+                    <div class="flex gap-3 pt-4">
+                        <button
+                            type="button"
+                            @click="closeModals"
+                            class="flex-1 bg-stone-100 hover:bg-stone-200 text-stone-700 font-medium py-3 px-4 rounded-lg transition duration-200"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            :disabled="endMonthForm.processing || (showOverrideConfirmation && overrideText !== 'OVERRIDE')"
+                            class="flex-1 bg-cyan-500 hover:bg-cyan-600 text-white font-medium py-3 px-4 rounded-lg transition duration-200 disabled:opacity-50"
+                        >
+                            <span v-if="endMonthForm.processing">Processing...</span>
+                            <span v-else-if="monthExists && !showOverrideConfirmation">Month Already Exists</span>
+                            <span v-else-if="showOverrideConfirmation && overrideText !== 'OVERRIDE'">Type OVERRIDE to confirm</span>
+                            <span v-else>🏁 End Month & Collect Water</span>
                         </button>
                     </div>
                 </form>

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CompletedMonthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MonthlyExpenseController;
 use App\Http\Controllers\MonthlyRevenueController;
@@ -45,6 +46,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/garden/{savingsGoal}/add-savings', [SavingsGoalController::class, 'addSavings'])->name('garden.add-savings');
     Route::post('/garden/{savingsGoal}/withdraw', [SavingsGoalController::class, 'withdraw'])->name('garden.withdraw');
     Route::post('/garden/{savingsGoal}/complete', [SavingsGoalController::class, 'complete'])->name('garden.complete');
+
     // Recurring Bills routes
     Route::get('/bills', [RecurringBillController::class, 'index'])->name('bills.index');
     Route::post('/bills', [RecurringBillController::class, 'store'])->name('bills.store');
@@ -71,6 +73,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/water-bank/water-all', [WaterBankController::class, 'waterAllGoals'])->name('water-bank.water-all');
     Route::post('/water-bank/add-manual', [WaterBankController::class, 'addManualWater'])->name('water-bank.add-manual');
     Route::get('/water-bank/status', [WaterBankController::class, 'getStatus'])->name('water-bank.status');
+
+    // Past Months / Completed Months routes
+    Route::get('/past-months', [CompletedMonthController::class, 'index'])->name('past-months.index');
+    Route::match(['get', 'post'], '/past-months/check-exists', [CompletedMonthController::class, 'checkMonthExists'])->name('past-months.check-exists');
+    Route::get('/past-months/{completedMonth}', [CompletedMonthController::class, 'show'])->name('past-months.show');
+    Route::delete('/past-months/{completedMonth}', [CompletedMonthController::class, 'destroy'])->name('past-months.destroy');
 });
 
 
