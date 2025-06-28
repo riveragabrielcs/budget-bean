@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\SavingsGoal;
+use App\Models\WaterBank;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\ValidationException;
@@ -50,9 +51,34 @@ class SavingsGoalController extends Controller
                 : 0,
         ];
 
+        // Get water bank data
+        $waterBank = WaterBank::getOrCreateForUser($user->id);
+        $waterBankData = [
+            'balance' => $waterBank->balance,
+            'formatted_balance' => $waterBank->formatted_balance,
+            'recent_transactions' => $waterBank->transactions()
+                ->with('savingsGoal')
+                ->orderBy('created_at', 'desc')
+                ->limit(5)
+                ->get()
+                ->map(function ($transaction) {
+                    return [
+                        'id' => $transaction->id,
+                        'type' => $transaction->type,
+                        'amount' => $transaction->amount,
+                        'formatted_amount' => $transaction->formatted_amount,
+                        'icon' => $transaction->icon,
+                        'description' => $transaction->display_description,
+                        'date' => $transaction->created_at->format('M j, Y'),
+                        'date_short' => $transaction->created_at->format('M j'),
+                    ];
+                }),
+        ];
+
         return Inertia::render('Garden/MyGarden', [
             'savingsGoals' => $savingsGoals,
             'stats' => $stats,
+            'waterBank' => $waterBankData,
         ]);
     }
 
@@ -105,16 +131,29 @@ class SavingsGoalController extends Controller
 
         $validated = $request->validate([
             'amount' => 'required|numeric|min:0.01|max:9999999.99',
+            'source' => 'required|in:water_bank,other',
         ]);
 
-        $oldAmount = $savingsGoal->current_amount;
-        $savingsGoal->addSavings($validated['amount']);
+        $user = auth()->user();
+        $amount = $validated['amount'];
+        $source = $validated['source'];
 
-        $message = "Added $" . number_format($validated['amount'], 2) . " to your {$savingsGoal->name} goal! 💰";
+        if ($source === 'water_bank') {
+            $waterBank = WaterBank::getOrCreateForUser($user->id);
 
-        // Check if goal was completed with this addition
-        if (!$savingsGoal->wasChanged('is_completed') && $savingsGoal->is_reached) {
-            $message .= " Your goal is now complete! 🎉";
+            if (!$waterBank->hasEnoughWater($amount)) {
+                return back()->with('error', 'Not enough water in your Water Bank! 💧');
+            }
+
+            // Use water from bank and add to goal
+            $waterBank->useWater($amount, $savingsGoal->id);
+            $savingsGoal->addSavings($amount);
+
+            $message = "Watered {$savingsGoal->name} with " . number_format($amount, 2) . " from your Water Bank! 🌱💧";
+        } else {
+            // Other money (gifts, cash, etc.)
+            $savingsGoal->addSavings($amount);
+            $message = "Added " . number_format($amount, 2) . " to {$savingsGoal->name}! 💰";
         }
 
         return redirect()->route('garden.index')->with('success', $message);

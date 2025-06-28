@@ -6,6 +6,7 @@ use App\Http\Controllers\MonthlyRevenueController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RecurringBillController;
 use App\Http\Controllers\SavingsGoalController;
+use App\Http\Controllers\WaterBankController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -63,6 +64,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/revenue/current', [MonthlyRevenueController::class, 'getCurrent'])->name('revenue.current');
     Route::patch('/revenue/savings-goal', [MonthlyRevenueController::class, 'updateSavingsGoal'])->name('revenue.savings-goal');
     Route::delete('/revenue', [MonthlyRevenueController::class, 'destroy'])->name('revenue.destroy');
+
+    // Water Bank routes
+    Route::post('/water-bank/end-month', [WaterBankController::class, 'endMonth'])->name('water-bank.end-month');
+    Route::post('/water-bank/water-goal/{savingsGoal}', [WaterBankController::class, 'waterGoal'])->name('water-bank.water-goal');
+    Route::post('/water-bank/water-all', [WaterBankController::class, 'waterAllGoals'])->name('water-bank.water-all');
+    Route::post('/water-bank/add-manual', [WaterBankController::class, 'addManualWater'])->name('water-bank.add-manual');
+    Route::get('/water-bank/status', [WaterBankController::class, 'getStatus'])->name('water-bank.status');
 });
+
 
 require __DIR__.'/auth.php';

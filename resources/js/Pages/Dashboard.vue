@@ -1,8 +1,8 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import NavLink from '@/Components/NavLink.vue';
-import {Head, useForm, router} from '@inertiajs/vue3';
-import {computed, ref, watch} from 'vue';
+import { Head, useForm, router } from '@inertiajs/vue3';
+import { computed, ref, watch } from 'vue';
 
 const props = defineProps({
     savingsGoals: Array,
@@ -146,6 +146,19 @@ const deleteExpense = (expense) => {
     }
 };
 
+const endMonth = () => {
+    if (confirm('End this month and transfer your unspent money to the Water Bank? This will make the water available for watering your plants!')) {
+        router.post(route('water-bank.end-month'), {}, {
+            onSuccess: () => {
+                // Will redirect to garden page with success message
+            },
+            onError: () => {
+                alert('Failed to end month. Please try again.');
+            }
+        });
+    }
+};
+
 const closeModals = () => {
     showAddExpenseModal.value = false;
     showRevenueModal.value = false;
@@ -164,7 +177,7 @@ const formatCurrency = (amount) => {
 </script>
 
 <template>
-    <Head title="This Month"/>
+    <Head title="This Month" />
 
     <AuthenticatedLayout>
         <template #header>
@@ -182,13 +195,10 @@ const formatCurrency = (amount) => {
                 <div
                     class="overflow-hidden bg-white shadow-lg sm:rounded-xl border border-emerald-100 mb-6"
                 >
-                    <div
-                        class="p-6 bg-gradient-to-br from-emerald-50 via-green-50 to-amber-50 relative overflow-hidden">
+                    <div class="p-6 bg-gradient-to-br from-emerald-50 via-green-50 to-amber-50 relative overflow-hidden">
                         <!-- Subtle decorative elements -->
-                        <div
-                            class="absolute top-0 right-0 w-32 h-32 bg-emerald-100 rounded-full opacity-20 -translate-y-16 translate-x-16"></div>
-                        <div
-                            class="absolute bottom-0 left-0 w-24 h-24 bg-amber-100 rounded-full opacity-20 translate-y-12 -translate-x-12"></div>
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-emerald-100 rounded-full opacity-20 -translate-y-16 translate-x-16"></div>
+                        <div class="absolute bottom-0 left-0 w-24 h-24 bg-amber-100 rounded-full opacity-20 translate-y-12 -translate-x-12"></div>
 
                         <div class="flex items-center relative">
                             <div class="flex-1">
@@ -200,8 +210,7 @@ const formatCurrency = (amount) => {
                                 </p>
                             </div>
                             <div class="hidden sm:block">
-                                <div
-                                    class="w-16 h-16 bg-gradient-to-br from-amber-100 to-amber-200 rounded-2xl flex items-center justify-center shadow-md border border-amber-200">
+                                <div class="w-16 h-16 bg-gradient-to-br from-amber-100 to-amber-200 rounded-2xl flex items-center justify-center shadow-md border border-amber-200">
                                     <span class="text-3xl">💰</span>
                                 </div>
                             </div>
@@ -212,25 +221,20 @@ const formatCurrency = (amount) => {
                 <!-- Quick Stats Grid -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                     <!-- This Month's Revenue Card -->
-                    <div
-                        class="bg-white overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-200 sm:rounded-xl border border-emerald-100">
+                    <div class="bg-white overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-200 sm:rounded-xl border border-emerald-100">
                         <div class="p-6">
                             <div class="flex items-center">
                                 <div class="flex-shrink-0">
-                                    <div
-                                        class="w-10 h-10 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-xl flex items-center justify-center shadow-sm">
+                                    <div class="w-10 h-10 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-xl flex items-center justify-center shadow-sm">
                                         <span class="text-emerald-600 text-lg">📊</span>
                                     </div>
                                 </div>
                                 <dl class="ml-4 flex-1">
-                                    <dt class="text-sm font-medium text-stone-500 uppercase tracking-wide">This Month's
-                                        Revenue
-                                    </dt>
+                                    <dt class="text-sm font-medium text-stone-500 uppercase tracking-wide">This Month's Revenue</dt>
                                     <dd class="text-3xl font-bold text-emerald-800 mt-1">
                                         {{ hasRevenue ? formatCurrency(currentRevenue.total_revenue) : '$0.00' }}
                                     </dd>
-                                    <div v-if="hasRevenue && currentRevenue.source_description"
-                                         class="text-xs text-emerald-600 mt-1">
+                                    <div v-if="hasRevenue && currentRevenue.source_description" class="text-xs text-emerald-600 mt-1">
                                         {{ currentRevenue.source_description }}
                                     </div>
                                 </dl>
@@ -239,9 +243,8 @@ const formatCurrency = (amount) => {
                     </div>
 
                     <!-- Budget Remaining Card -->
-                    <div
-                        class="bg-white overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-200 sm:rounded-xl"
-                        :class="{
+                    <div class="bg-white overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-200 sm:rounded-xl"
+                         :class="{
                              'border-emerald-100': budgetStatus === 'positive',
                              'border-amber-200': budgetStatus === 'warning',
                              'border-red-200': budgetStatus === 'negative',
@@ -269,9 +272,7 @@ const formatCurrency = (amount) => {
                                     </div>
                                 </div>
                                 <dl class="ml-4 flex-1">
-                                    <dt class="text-sm font-medium text-stone-500 uppercase tracking-wide">Month's
-                                        Budget Left
-                                    </dt>
+                                    <dt class="text-sm font-medium text-stone-500 uppercase tracking-wide">Month's Budget Left</dt>
                                     <dd class="text-3xl font-bold mt-1"
                                         :class="{
                                             'text-emerald-800': budgetStatus === 'positive',
@@ -293,24 +294,18 @@ const formatCurrency = (amount) => {
                     </div>
 
                     <!-- Savings Goal Card -->
-                    <div
-                        class="bg-white overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-200 sm:rounded-xl border border-green-100">
+                    <div class="bg-white overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-200 sm:rounded-xl border border-green-100">
                         <div class="p-6">
                             <div class="flex items-center">
                                 <div class="flex-shrink-0">
-                                    <div
-                                        class="w-10 h-10 bg-gradient-to-br from-green-100 to-green-200 rounded-xl flex items-center justify-center shadow-sm">
+                                    <div class="w-10 h-10 bg-gradient-to-br from-green-100 to-green-200 rounded-xl flex items-center justify-center shadow-sm">
                                         <span class="text-green-600 text-lg">🏆</span>
                                     </div>
                                 </div>
                                 <dl class="ml-4 flex-1">
-                                    <dt class="text-sm font-medium text-stone-500 uppercase tracking-wide">Month's
-                                        Savings Goal
-                                    </dt>
+                                    <dt class="text-sm font-medium text-stone-500 uppercase tracking-wide">Month's Savings Goal</dt>
                                     <dd class="text-3xl font-bold text-green-800 mt-1">
-                                        {{
-                                            hasSavingsGoal ? formatCurrency(currentRevenue.monthly_savings_goal) : '$0.00'
-                                        }}
+                                        {{ hasSavingsGoal ? formatCurrency(currentRevenue.monthly_savings_goal) : '$0.00' }}
                                     </dd>
                                 </dl>
                             </div>
@@ -319,15 +314,13 @@ const formatCurrency = (amount) => {
                 </div>
 
                 <!-- Budget Warning Banner -->
-                <div
-                    v-if="hasRevenue && hasSavingsGoal && currentRevenue.monthly_savings_goal > currentRevenue.total_revenue"
-                    class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+                <div v-if="hasRevenue && hasSavingsGoal && currentRevenue.monthly_savings_goal > currentRevenue.total_revenue"
+                     class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
                     <div class="flex items-center">
                         <span class="text-amber-600 text-xl mr-3">⚠️</span>
                         <div>
                             <h4 class="font-medium text-amber-800">Impossible Budget Alert</h4>
-                            <p class="text-sm text-amber-700">Your savings goal is higher than your revenue. Consider
-                                adjusting one of them.</p>
+                            <p class="text-sm text-amber-700">Your savings goal is higher than your revenue. Consider adjusting one of them.</p>
                         </div>
                     </div>
                 </div>
@@ -344,13 +337,11 @@ const formatCurrency = (amount) => {
 
                             <!-- Empty State -->
                             <div v-if="!hasExpenses" class="text-center py-12">
-                                <div
-                                    class="w-20 h-20 bg-gradient-to-br from-stone-50 to-stone-100 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm border border-stone-200">
+                                <div class="w-20 h-20 bg-gradient-to-br from-stone-50 to-stone-100 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm border border-stone-200">
                                     <span class="text-3xl text-stone-400">🧾</span>
                                 </div>
                                 <h4 class="font-medium text-stone-600 mb-2">No expenses yet</h4>
-                                <p class="text-sm text-stone-500 max-w-sm mx-auto leading-relaxed mb-6">Start tracking
-                                    your spending to see them here and watch your financial garden grow!</p>
+                                <p class="text-sm text-stone-500 max-w-sm mx-auto leading-relaxed mb-6">Start tracking your spending to see them here and watch your financial garden grow!</p>
 
                                 <div class="flex flex-col sm:flex-row gap-3 justify-center">
                                     <button
@@ -399,9 +390,7 @@ const formatCurrency = (amount) => {
                                     >
                                         <div class="flex items-center justify-between mb-2">
                                             <div class="flex items-center flex-1">
-                                                <span class="text-lg mr-3">{{
-                                                        expense.type === 'recurring_bill' ? '💳' : '💸'
-                                                    }}</span>
+                                                <span class="text-lg mr-3">{{ expense.type === 'recurring_bill' ? '💳' : '💸' }}</span>
                                                 <div class="flex-1">
                                                     <h4 class="font-medium text-emerald-800">{{ expense.name }}</h4>
                                                     <div class="flex items-center gap-2">
@@ -413,12 +402,10 @@ const formatCurrency = (amount) => {
                                                               class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200">
                                                             💸 One-Time Expense
                                                         </span>
-                                                        <span v-if="expense.formatted_bill_date"
-                                                              class="text-xs text-emerald-600">
+                                                        <span v-if="expense.formatted_bill_date" class="text-xs text-emerald-600">
                                                             Due: {{ expense.formatted_bill_date }}
                                                         </span>
-                                                        <span v-if="expense.formatted_expense_date"
-                                                              class="text-xs text-emerald-600">
+                                                        <span v-if="expense.formatted_expense_date" class="text-xs text-emerald-600">
                                                             {{ expense.formatted_expense_date }}
                                                         </span>
                                                     </div>
@@ -426,9 +413,7 @@ const formatCurrency = (amount) => {
                                             </div>
                                             <div class="flex items-center gap-3">
                                                 <div class="text-right">
-                                                    <div class="text-lg font-bold text-stone-700">
-                                                        {{ formatCurrency(expense.amount) }}
-                                                    </div>
+                                                    <div class="text-lg font-bold text-stone-700">{{ formatCurrency(expense.amount) }}</div>
                                                 </div>
                                                 <!-- Delete button for one-time expenses only -->
                                                 <button
@@ -437,11 +422,8 @@ const formatCurrency = (amount) => {
                                                     class="text-stone-400 hover:text-red-500 transition-colors p-1 rounded-lg hover:bg-red-50"
                                                     title="Delete expense"
                                                 >
-                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                                         viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                              stroke-width="2"
-                                                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                                                     </svg>
                                                 </button>
                                             </div>
@@ -457,9 +439,7 @@ const formatCurrency = (amount) => {
                                 <div class="border-t border-emerald-100 pt-4">
                                     <div class="flex justify-between items-center">
                                         <span class="font-medium text-stone-600">Monthly Total:</span>
-                                        <span class="text-xl font-bold text-emerald-800">{{
-                                                formatCurrency(expenseStats.total_monthly_expenses)
-                                            }}</span>
+                                        <span class="text-xl font-bold text-emerald-800">{{ formatCurrency(expenseStats.total_monthly_expenses) }}</span>
                                     </div>
                                     <div class="text-sm text-stone-500 mt-1">
                                         {{ expenseStats.recurring_bills_count }} recurring bills
@@ -490,48 +470,51 @@ const formatCurrency = (amount) => {
                             </div>
 
                             <!-- Water Bank Section -->
-                            <div v-if="budgetData && budgetData.potential_water_bank > 0"
-                                 class="mb-6 p-4 bg-gradient-to-br from-cyan-50 to-blue-50 border border-cyan-200 rounded-lg">
-                                <div class="flex items-center justify-between">
+                            <div v-if="budgetData && budgetData.potential_water_bank > 0" class="mb-6 p-4 bg-gradient-to-br from-cyan-50 to-blue-50 border border-cyan-200 rounded-lg">
+                                <div class="flex items-center justify-between mb-3">
                                     <div class="flex items-center">
                                         <span class="text-2xl mr-3">💧</span>
                                         <div>
                                             <h4 class="font-semibold text-cyan-800">Water Bank Preview</h4>
-                                            <p class="text-xs text-cyan-600">All unspent money available for watering
-                                                plants</p>
+                                            <p class="text-xs text-cyan-600">All unspent money available for watering plants</p>
                                         </div>
                                     </div>
                                     <div class="text-2xl font-bold text-cyan-800">
                                         {{ formatCurrency(budgetData.potential_water_bank) }}
                                     </div>
                                 </div>
-                                <div class="text-xs text-cyan-600 mt-2">
+                                <div class="text-xs text-cyan-600 mb-3">
                                     Includes your savings goal + any money you didn't spend
+                                </div>
+                                <div class="flex justify-center">
+                                    <button
+                                        @click="endMonth"
+                                        class="bg-cyan-500 hover:bg-cyan-600 text-white font-medium px-4 py-2 rounded-lg transition duration-200 flex items-center"
+                                    >
+                                        <span class="mr-2">🏁</span>
+                                        End Month & Collect Water
+                                    </button>
                                 </div>
                             </div>
 
                             <!-- Drought Warning -->
-                            <div v-else-if="budgetData?.is_drought"
-                                 class="mb-6 p-4 bg-gradient-to-br from-red-50 to-orange-50 border border-red-200 rounded-lg">
+                            <div v-else-if="budgetData?.is_drought" class="mb-6 p-4 bg-gradient-to-br from-red-50 to-orange-50 border border-red-200 rounded-lg">
                                 <div class="flex items-center">
                                     <span class="text-2xl mr-3">🏜️</span>
                                     <div>
                                         <h4 class="font-semibold text-red-800">Drought Mode</h4>
-                                        <p class="text-xs text-red-600">No water available - you've overspent this
-                                            month</p>
+                                        <p class="text-xs text-red-600">No water available - you've overspent this month</p>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Empty State -->
                             <div v-if="!hasGoals" class="text-center py-8">
-                                <div
-                                    class="w-16 h-16 bg-gradient-to-br from-emerald-50 to-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm border border-emerald-200">
+                                <div class="w-16 h-16 bg-gradient-to-br from-emerald-50 to-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm border border-emerald-200">
                                     <span class="text-2xl text-emerald-500">🌱</span>
                                 </div>
                                 <h4 class="font-medium text-stone-600 mb-2">Plant your first savings goal</h4>
-                                <p class="text-sm text-stone-500 max-w-sm mx-auto leading-relaxed">Start growing your
-                                    dreams! Add savings goals and watch them bloom!</p>
+                                <p class="text-sm text-stone-500 max-w-sm mx-auto leading-relaxed">Start growing your dreams! Add savings goals and watch them bloom!</p>
                             </div>
 
                             <!-- Goals List -->
@@ -550,22 +533,15 @@ const formatCurrency = (amount) => {
                                             </div>
                                         </div>
                                         <div class="text-right">
-                                            <div class="text-sm font-medium text-stone-700">
-                                                {{ formatCurrency(goal.current_amount) }}
-                                            </div>
-                                            <div class="text-xs text-stone-500">of {{
-                                                    formatCurrency(goal.target_amount)
-                                                }}
-                                            </div>
+                                            <div class="text-sm font-medium text-stone-700">{{ formatCurrency(goal.current_amount) }}</div>
+                                            <div class="text-xs text-stone-500">of {{ formatCurrency(goal.target_amount) }}</div>
                                         </div>
                                     </div>
 
                                     <div class="mb-2">
                                         <div class="flex justify-between items-center mb-1">
                                             <span class="text-xs text-stone-500">Progress</span>
-                                            <span class="text-xs font-medium text-emerald-700">{{
-                                                    Math.round(goal.progress_percentage)
-                                                }}%</span>
+                                            <span class="text-xs font-medium text-emerald-700">{{ Math.round(goal.progress_percentage) }}%</span>
                                         </div>
                                         <div class="w-full bg-stone-200 rounded-full h-2">
                                             <div
@@ -606,8 +582,7 @@ const formatCurrency = (amount) => {
     </AuthenticatedLayout>
 
     <!-- Add One-Time Expense Modal -->
-    <div v-if="showAddExpenseModal"
-         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div v-if="showAddExpenseModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-xl shadow-xl max-w-md w-full">
             <div class="p-6">
                 <div class="flex items-center justify-between mb-6">
@@ -617,8 +592,7 @@ const formatCurrency = (amount) => {
                     </h3>
                     <button @click="closeModals" class="text-stone-400 hover:text-stone-600">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                  d="M6 18L18 6M6 6l12 12"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
                     </button>
                 </div>
@@ -633,9 +607,7 @@ const formatCurrency = (amount) => {
                             class="w-full px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                             required
                         />
-                        <div v-if="addExpenseForm.errors.name" class="text-red-600 text-sm mt-1">
-                            {{ addExpenseForm.errors.name }}
-                        </div>
+                        <div v-if="addExpenseForm.errors.name" class="text-red-600 text-sm mt-1">{{ addExpenseForm.errors.name }}</div>
                     </div>
 
                     <div>
@@ -652,9 +624,7 @@ const formatCurrency = (amount) => {
                                 required
                             />
                         </div>
-                        <div v-if="addExpenseForm.errors.amount" class="text-red-600 text-sm mt-1">
-                            {{ addExpenseForm.errors.amount }}
-                        </div>
+                        <div v-if="addExpenseForm.errors.amount" class="text-red-600 text-sm mt-1">{{ addExpenseForm.errors.amount }}</div>
                     </div>
 
                     <div>
@@ -664,9 +634,7 @@ const formatCurrency = (amount) => {
                             type="date"
                             class="w-full px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                         />
-                        <div v-if="addExpenseForm.errors.expense_date" class="text-red-600 text-sm mt-1">
-                            {{ addExpenseForm.errors.expense_date }}
-                        </div>
+                        <div v-if="addExpenseForm.errors.expense_date" class="text-red-600 text-sm mt-1">{{ addExpenseForm.errors.expense_date }}</div>
                     </div>
 
                     <div>
@@ -677,9 +645,7 @@ const formatCurrency = (amount) => {
                             rows="3"
                             class="w-full px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                         ></textarea>
-                        <div v-if="addExpenseForm.errors.description" class="text-red-600 text-sm mt-1">
-                            {{ addExpenseForm.errors.description }}
-                        </div>
+                        <div v-if="addExpenseForm.errors.description" class="text-red-600 text-sm mt-1">{{ addExpenseForm.errors.description }}</div>
                     </div>
 
                     <div class="flex gap-3 pt-4">
@@ -715,8 +681,7 @@ const formatCurrency = (amount) => {
                     </h3>
                     <button @click="closeModals" class="text-stone-400 hover:text-stone-600">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                  d="M6 18L18 6M6 6l12 12"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
                     </button>
                 </div>
@@ -724,8 +689,7 @@ const formatCurrency = (amount) => {
                 <form @submit.prevent="submitRevenue" class="space-y-4">
                     <!-- Calculation Method -->
                     <div>
-                        <label class="block text-sm font-medium text-stone-700 mb-3">How would you like to calculate
-                            your revenue?</label>
+                        <label class="block text-sm font-medium text-stone-700 mb-3">How would you like to calculate your revenue?</label>
                         <div class="space-y-3">
                             <label class="flex items-center cursor-pointer">
                                 <input
@@ -764,14 +728,11 @@ const formatCurrency = (amount) => {
                                     required
                                 />
                             </div>
-                            <div v-if="revenueForm.errors.paycheck_amount" class="text-red-600 text-sm mt-1">
-                                {{ revenueForm.errors.paycheck_amount }}
-                            </div>
+                            <div v-if="revenueForm.errors.paycheck_amount" class="text-red-600 text-sm mt-1">{{ revenueForm.errors.paycheck_amount }}</div>
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-stone-700 mb-2">Number of Paychecks This Month
-                                *</label>
+                            <label class="block text-sm font-medium text-stone-700 mb-2">Number of Paychecks This Month *</label>
                             <input
                                 v-model="revenueForm.paycheck_count"
                                 type="number"
@@ -781,23 +742,17 @@ const formatCurrency = (amount) => {
                                 class="w-full px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                                 required
                             />
-                            <div v-if="revenueForm.errors.paycheck_count" class="text-red-600 text-sm mt-1">
-                                {{ revenueForm.errors.paycheck_count }}
-                            </div>
+                            <div v-if="revenueForm.errors.paycheck_count" class="text-red-600 text-sm mt-1">{{ revenueForm.errors.paycheck_count }}</div>
                         </div>
 
                         <!-- Live Calculation Preview -->
-                        <div v-if="revenueForm.paycheck_amount && revenueForm.paycheck_count"
-                             class="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+                        <div v-if="revenueForm.paycheck_amount && revenueForm.paycheck_count" class="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
                             <div class="flex justify-between items-center">
                                 <span class="text-sm font-medium text-emerald-700">Total Revenue:</span>
-                                <span class="text-lg font-bold text-emerald-800">{{
-                                        formatCurrency(calculatedTotal)
-                                    }}</span>
+                                <span class="text-lg font-bold text-emerald-800">{{ formatCurrency(calculatedTotal) }}</span>
                             </div>
                             <div class="text-xs text-emerald-600 mt-1">
-                                {{ revenueForm.paycheck_count }} paychecks ×
-                                {{ formatCurrency(revenueForm.paycheck_amount) }}
+                                {{ revenueForm.paycheck_count }} paychecks × {{ formatCurrency(revenueForm.paycheck_amount) }}
                             </div>
                         </div>
                     </div>
@@ -817,9 +772,7 @@ const formatCurrency = (amount) => {
                                 required
                             />
                         </div>
-                        <div v-if="revenueForm.errors.total_revenue" class="text-red-600 text-sm mt-1">
-                            {{ revenueForm.errors.total_revenue }}
-                        </div>
+                        <div v-if="revenueForm.errors.total_revenue" class="text-red-600 text-sm mt-1">{{ revenueForm.errors.total_revenue }}</div>
                     </div>
 
                     <div class="flex gap-3 pt-4">
@@ -836,7 +789,7 @@ const formatCurrency = (amount) => {
                             class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-3 px-4 rounded-lg transition duration-200 disabled:opacity-50"
                         >
                             <span v-if="revenueForm.processing">Saving...</span>
-                            <span v-else>📊 {{ hasRevenue ? 'Update' : 'Set' }} Revenue</span>
+                            <span v-else">📊 {{ hasRevenue ? 'Update' : 'Set' }} Revenue</span>
                         </button>
                     </div>
                 </form>
@@ -845,8 +798,7 @@ const formatCurrency = (amount) => {
     </div>
 
     <!-- Savings Goal Modal -->
-    <div v-if="showSavingsGoalModal"
-         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div v-if="showSavingsGoalModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-xl shadow-xl max-w-md w-full">
             <div class="p-6">
                 <div class="flex items-center justify-between mb-6">
@@ -856,8 +808,7 @@ const formatCurrency = (amount) => {
                     </h3>
                     <button @click="closeModals" class="text-stone-400 hover:text-stone-600">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                  d="M6 18L18 6M6 6l12 12"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
                     </button>
                 </div>
@@ -869,8 +820,7 @@ const formatCurrency = (amount) => {
                         Your Garden Goals
                     </h4>
                     <div class="space-y-2">
-                        <div v-for="goal in savingsGoals.slice(0, 3)" :key="goal.id"
-                             class="flex justify-between text-sm">
+                        <div v-for="goal in savingsGoals.slice(0, 3)" :key="goal.id" class="flex justify-between text-sm">
                             <span class="text-green-700">{{ goal.plant_emoji }} {{ goal.name }}</span>
                             <span class="text-green-600">{{ formatCurrency(goal.remaining_amount) }} needed</span>
                         </div>
@@ -878,8 +828,7 @@ const formatCurrency = (amount) => {
                             +{{ savingsGoals.length - 3 }} more goals
                         </div>
                     </div>
-                    <p class="text-xs text-green-600 mt-2">Your monthly savings will become Water Bank for your plants!
-                        💧</p>
+                    <p class="text-xs text-green-600 mt-2">Your monthly savings will become Water Bank for your plants! 💧</p>
                 </div>
 
                 <form @submit.prevent="submitSavingsGoal" class="space-y-4">
@@ -897,11 +846,8 @@ const formatCurrency = (amount) => {
                                 required
                             />
                         </div>
-                        <div v-if="savingsGoalForm.errors.monthly_savings_goal" class="text-red-600 text-sm mt-1">
-                            {{ savingsGoalForm.errors.monthly_savings_goal }}
-                        </div>
-                        <p class="text-xs text-stone-500 mt-1">This amount will be set aside each month to water your
-                            garden plants.</p>
+                        <div v-if="savingsGoalForm.errors.monthly_savings_goal" class="text-red-600 text-sm mt-1">{{ savingsGoalForm.errors.monthly_savings_goal }}</div>
+                        <p class="text-xs text-stone-500 mt-1">This amount will be set aside each month to water your garden plants.</p>
                     </div>
 
                     <div class="flex gap-3 pt-4">

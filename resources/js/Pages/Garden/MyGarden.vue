@@ -6,12 +6,14 @@ import { Head, useForm } from '@inertiajs/vue3';
 const props = defineProps({
     savingsGoals: Array,
     stats: Object,
+    waterBank: Object,
 });
 
 // Modal states
 const showAddGoalModal = ref(false);
 const showAddSavingsModal = ref(false);
 const showEditGoalModal = ref(false);
+const showWaterAllModal = ref(false);
 const selectedGoal = ref(null);
 
 // Forms
@@ -23,6 +25,7 @@ const addGoalForm = useForm({
 
 const addSavingsForm = useForm({
     amount: '',
+    source: 'water_bank',
 });
 
 const editGoalForm = useForm({
@@ -31,14 +34,17 @@ const editGoalForm = useForm({
     target_amount: '',
 });
 
-const withdrawForm = useForm({
-    amount: '',
+const waterAllForm = useForm({
+    total_amount: '',
+    source: 'water_bank',
 });
 
 // Computed properties
 const activeGoals = computed(() => props.savingsGoals.filter(goal => !goal.is_completed));
 const completedGoals = computed(() => props.savingsGoals.filter(goal => goal.is_completed));
 const hasGoals = computed(() => props.savingsGoals.length > 0);
+const hasActiveGoals = computed(() => activeGoals.value.length > 0);
+const hasWaterBank = computed(() => props.waterBank.balance > 0);
 
 // Methods
 const openAddGoalModal = () => {
@@ -49,7 +55,14 @@ const openAddGoalModal = () => {
 const openAddSavingsModal = (goal) => {
     selectedGoal.value = goal;
     addSavingsForm.reset();
+    addSavingsForm.source = hasWaterBank.value ? 'water_bank' : 'other';
     showAddSavingsModal.value = true;
+};
+
+const openWaterAllModal = () => {
+    waterAllForm.reset();
+    waterAllForm.source = hasWaterBank.value ? 'water_bank' : 'other';
+    showWaterAllModal.value = true;
 };
 
 const openEditGoalModal = (goal) => {
@@ -75,6 +88,15 @@ const submitAddSavings = () => {
             showAddSavingsModal.value = false;
             addSavingsForm.reset();
             selectedGoal.value = null;
+        },
+    });
+};
+
+const submitWaterAll = () => {
+    waterAllForm.post(route('water-bank.water-all'), {
+        onSuccess: () => {
+            showWaterAllModal.value = false;
+            waterAllForm.reset();
         },
     });
 };
@@ -112,6 +134,7 @@ const closeModals = () => {
     showAddGoalModal.value = false;
     showAddSavingsModal.value = false;
     showEditGoalModal.value = false;
+    showWaterAllModal.value = false;
     selectedGoal.value = null;
 };
 </script>
@@ -167,6 +190,83 @@ const closeModals = () => {
                                     <div class="text-center">
                                         <div class="text-2xl font-bold text-emerald-800">{{ formatCurrency(stats.total_saved) }}</div>
                                         <div class="text-sm text-stone-600">Total Saved</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Water Bank Section -->
+                <div v-if="hasGoals" class="mb-8">
+                    <div class="bg-white overflow-hidden shadow-lg sm:rounded-xl border border-cyan-100">
+                        <div class="p-6 bg-gradient-to-br from-cyan-50 via-blue-50 to-indigo-50 relative overflow-hidden">
+                            <div class="absolute top-0 right-0 w-32 h-32 bg-cyan-100 rounded-full opacity-20 -translate-y-16 translate-x-16"></div>
+
+                            <div class="relative">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="text-xl font-semibold text-cyan-800 flex items-center">
+                                        <span class="mr-2">💧</span>
+                                        Water Bank
+                                    </h3>
+                                    <div class="text-right">
+                                        <div class="text-2xl font-bold text-cyan-800">{{ formatCurrency(waterBank.balance) }}</div>
+                                        <div class="text-sm text-cyan-600">Available Water</div>
+                                    </div>
+                                </div>
+
+                                <div v-if="!hasWaterBank" class="text-center py-4">
+                                    <p class="text-cyan-600 mb-2">Your water bank is empty! 🏜️</p>
+                                    <p class="text-xs text-cyan-500">End a month with unspent money to fill your water bank.</p>
+                                </div>
+
+                                <div v-else class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    <!-- Water Actions -->
+                                    <div>
+                                        <h4 class="font-medium text-cyan-700 mb-3 flex items-center">
+                                            <span class="mr-2">🚿</span>
+                                            Watering Actions
+                                        </h4>
+                                        <div class="space-y-2">
+                                            <button
+                                                v-if="hasActiveGoals"
+                                                @click="openWaterAllModal"
+                                                class="w-full bg-cyan-100 hover:bg-cyan-200 text-cyan-700 font-medium py-2 px-4 rounded-lg transition duration-200 flex items-center justify-center"
+                                            >
+                                                <span class="mr-2">🌊</span>
+                                                Water All Goals Equally
+                                            </button>
+                                            <p class="text-xs text-cyan-600">
+                                                Or use the "Water Plant" button on individual goals below
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Recent Transactions -->
+                                    <div v-if="waterBank.recent_transactions.length > 0">
+                                        <h4 class="font-medium text-cyan-700 mb-3 flex items-center">
+                                            <span class="mr-2">📊</span>
+                                            Recent Activity
+                                        </h4>
+                                        <div class="space-y-2 max-h-32 overflow-y-auto">
+                                            <div
+                                                v-for="transaction in waterBank.recent_transactions"
+                                                :key="transaction.id"
+                                                class="flex items-center justify-between text-xs"
+                                            >
+                                                <div class="flex items-center">
+                                                    <span class="mr-2">{{ transaction.icon }}</span>
+                                                    <span class="text-cyan-700">{{ transaction.description }}</span>
+                                                </div>
+                                                <div class="flex flex-col items-end">
+                                                    <span class="font-medium"
+                                                          :class="transaction.type === 'deposit' ? 'text-green-600' : 'text-red-600'">
+                                                        {{ transaction.formatted_amount }}
+                                                    </span>
+                                                    <span class="text-cyan-500">{{ transaction.date_short }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -261,10 +361,10 @@ const closeModals = () => {
                                 <div class="flex gap-2">
                                     <button
                                         @click="openAddSavingsModal(goal)"
-                                        class="flex-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 font-medium py-2 px-3 rounded-lg transition duration-200 text-sm flex items-center justify-center"
+                                        class="flex-1 bg-cyan-100 hover:bg-cyan-200 text-cyan-700 font-medium py-2 px-3 rounded-lg transition duration-200 text-sm flex items-center justify-center"
                                     >
-                                        <span class="mr-1">💰</span>
-                                        Add Money
+                                        <span class="mr-1">💧</span>
+                                        Water Plant
                                     </button>
                                     <button
                                         v-if="goal.is_reached"
@@ -413,7 +513,7 @@ const closeModals = () => {
                 <div class="p-6">
                     <div class="flex items-center justify-between mb-6">
                         <h3 class="text-xl font-semibold text-emerald-800 flex items-center">
-                            <span class="mr-2">💰</span>
+                            <span class="mr-2">💧</span>
                             Water Your Plant
                         </h3>
                         <button @click="closeModals" class="text-stone-400 hover:text-stone-600">
@@ -434,6 +534,34 @@ const closeModals = () => {
                     </div>
 
                     <form @submit.prevent="submitAddSavings" class="space-y-4">
+                        <!-- Source Selection -->
+                        <div>
+                            <label class="block text-sm font-medium text-stone-700 mb-3">Water Source</label>
+                            <div class="space-y-2">
+                                <label class="flex items-center cursor-pointer" :class="{ 'opacity-50': !hasWaterBank }">
+                                    <input
+                                        v-model="addSavingsForm.source"
+                                        type="radio"
+                                        value="water_bank"
+                                        :disabled="!hasWaterBank"
+                                        class="text-cyan-500 focus:ring-cyan-500 cursor-pointer"
+                                    />
+                                    <span class="ml-3 text-sm text-stone-700">
+                                        💧 Water Bank ({{ formatCurrency(waterBank.balance) }} available)
+                                    </span>
+                                </label>
+                                <label class="flex items-center cursor-pointer">
+                                    <input
+                                        v-model="addSavingsForm.source"
+                                        type="radio"
+                                        value="other"
+                                        class="text-emerald-500 focus:ring-emerald-500 cursor-pointer"
+                                    />
+                                    <span class="ml-3 text-sm text-stone-700">💰 Other Money (gifts, cash, etc.)</span>
+                                </label>
+                            </div>
+                        </div>
+
                         <div>
                             <label class="block text-sm font-medium text-stone-700 mb-2">Amount to Add</label>
                             <div class="relative">
@@ -443,6 +571,7 @@ const closeModals = () => {
                                     type="number"
                                     step="0.01"
                                     min="0.01"
+                                    :max="addSavingsForm.source === 'water_bank' ? waterBank.balance : 9999999.99"
                                     placeholder="100.00"
                                     class="w-full pl-8 pr-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                                     required
@@ -465,7 +594,111 @@ const closeModals = () => {
                                 class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-3 px-4 rounded-lg transition duration-200 disabled:opacity-50"
                             >
                                 <span v-if="addSavingsForm.processing">Adding...</span>
-                                <span v-else>💰 Add Money</span>
+                                <span v-else>{{ addSavingsForm.source === 'water_bank' ? '💧' : '💰' }} Add Money</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Water All Goals Modal -->
+        <div v-if="showWaterAllModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-xl shadow-xl max-w-md w-full">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-xl font-semibold text-emerald-800 flex items-center">
+                            <span class="mr-2">🌊</span>
+                            Water All Goals Equally
+                        </h3>
+                        <button @click="closeModals" class="text-stone-400 hover:text-stone-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="mb-6 p-4 bg-emerald-50 rounded-lg">
+                        <h4 class="font-medium text-emerald-800 mb-2">Your Active Goals</h4>
+                        <div class="space-y-1">
+                            <div v-for="goal in activeGoals.slice(0, 3)" :key="goal.id" class="flex justify-between text-sm">
+                                <span class="text-emerald-700">{{ goal.plant_emoji }} {{ goal.name }}</span>
+                                <span class="text-emerald-600">{{ formatCurrency(goal.remaining_amount) }} needed</span>
+                            </div>
+                            <div v-if="activeGoals.length > 3" class="text-xs text-emerald-600">
+                                +{{ activeGoals.length - 3 }} more goals
+                            </div>
+                        </div>
+                        <p class="text-xs text-emerald-600 mt-2">
+                            Amount will be divided equally among {{ activeGoals.length }} active goals
+                        </p>
+                    </div>
+
+                    <form @submit.prevent="submitWaterAll" class="space-y-4">
+                        <!-- Source Selection -->
+                        <div>
+                            <label class="block text-sm font-medium text-stone-700 mb-3">Water Source</label>
+                            <div class="space-y-2">
+                                <label class="flex items-center cursor-pointer" :class="{ 'opacity-50': !hasWaterBank }">
+                                    <input
+                                        v-model="waterAllForm.source"
+                                        type="radio"
+                                        value="water_bank"
+                                        :disabled="!hasWaterBank"
+                                        class="text-cyan-500 focus:ring-cyan-500 cursor-pointer"
+                                    />
+                                    <span class="ml-3 text-sm text-stone-700">
+                                        💧 Water Bank ({{ formatCurrency(waterBank.balance) }} available)
+                                    </span>
+                                </label>
+                                <label class="flex items-center cursor-pointer">
+                                    <input
+                                        v-model="waterAllForm.source"
+                                        type="radio"
+                                        value="other"
+                                        class="text-emerald-500 focus:ring-emerald-500 cursor-pointer"
+                                    />
+                                    <span class="ml-3 text-sm text-stone-700">💰 Other Money (gifts, cash, etc.)</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-stone-700 mb-2">Total Amount</label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-3 text-stone-500">$</span>
+                                <input
+                                    v-model="waterAllForm.total_amount"
+                                    type="number"
+                                    step="0.01"
+                                    min="0.01"
+                                    :max="waterAllForm.source === 'water_bank' ? waterBank.balance : 9999999.99"
+                                    placeholder="500.00"
+                                    class="w-full pl-8 pr-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                    required
+                                />
+                            </div>
+                            <div v-if="waterAllForm.total_amount && activeGoals.length" class="text-xs text-stone-500 mt-1">
+                                {{ formatCurrency(waterAllForm.total_amount / activeGoals.length) }} per goal
+                            </div>
+                            <div v-if="waterAllForm.errors.total_amount" class="text-red-600 text-sm mt-1">{{ waterAllForm.errors.total_amount }}</div>
+                        </div>
+
+                        <div class="flex gap-3 pt-4">
+                            <button
+                                type="button"
+                                @click="closeModals"
+                                class="flex-1 bg-stone-100 hover:bg-stone-200 text-stone-700 font-medium py-3 px-4 rounded-lg transition duration-200"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                :disabled="waterAllForm.processing"
+                                class="flex-1 bg-cyan-500 hover:bg-cyan-600 text-white font-medium py-3 px-4 rounded-lg transition duration-200 disabled:opacity-50"
+                            >
+                                <span v-if="waterAllForm.processing">Watering...</span>
+                                <span v-else>🌊 Water All Goals</span>
                             </button>
                         </div>
                     </form>
@@ -548,7 +781,7 @@ const closeModals = () => {
                                 class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-3 px-4 rounded-lg transition duration-200 disabled:opacity-50"
                             >
                                 <span v-if="editGoalForm.processing">Saving...</span>
-                                <span v-else>Save Changes</span>
+                                <span v-else">Save Changes</span>
                             </button>
                         </div>
                     </form>

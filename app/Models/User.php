@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -116,6 +117,22 @@ class User extends Authenticatable
             ->where('revenue_month', $now->month)
             ->where('revenue_year', $now->year)
             ->first();
+    }
+
+    /**
+     * Get the user's water bank.
+     */
+    public function waterBank(): HasOne
+    {
+        return $this->hasOne(WaterBank::class);
+    }
+
+    /**
+     * Get or create the user's water bank.
+     */
+    public function getOrCreateWaterBank(): WaterBank
+    {
+        return WaterBank::getOrCreateForUser($this->id);
     }
 
     /**
