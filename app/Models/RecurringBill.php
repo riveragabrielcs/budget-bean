@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\BillDateFormatter;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -48,18 +49,7 @@ class RecurringBill extends Model
      */
     public function getFormattedBillDateAttribute(): ?string
     {
-        if (!$this->bill_date) {
-            return null;
-        }
-
-        $suffix = match($this->bill_date % 10) {
-            1 => $this->bill_date % 100 === 11 ? 'th' : 'st',
-            2 => $this->bill_date % 100 === 12 ? 'th' : 'nd',
-            3 => $this->bill_date % 100 === 13 ? 'th' : 'rd',
-            default => 'th'
-        };
-
-        return $this->bill_date . $suffix;
+        return app(BillDateFormatter::class)->format($this->bill_date);
     }
 
     /**
