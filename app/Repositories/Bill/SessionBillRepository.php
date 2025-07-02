@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Repositories\Session;
+namespace App\Repositories\Bill;
 
+use App\Data\BillData;
 use App\DTOs\BillDTO;
 use App\Models\User;
-use App\Repositories\Contracts\BillRepositoryInterface;
 use App\Services\BillDateFormatter;
 use Illuminate\Support\Collection;
 
@@ -23,31 +23,22 @@ class SessionBillRepository implements BillRepositoryInterface
     public function forUser(User $user): Collection
     {
         return collect(session('guest_bills', []))
-            ->map(fn($raw) => new BillDTO(
-                id: $raw['id'],
-                name: $raw['name'],
-                amount: $raw['amount'],
-                date: $this->dateFormatter->format($raw['date']), // Now consistently formatted
-                type: $raw['type'],
-                description: $raw['description'] ?? null,
-                created_at: $raw['created_at'] ?? now()->toDateTimeString()
-            ));
+            ->map(fn($raw) => $this->mapToDTO($raw));
     }
 
     /**
      * Create a new bill for the user.
      */
-    public function create(User $user, array $data): BillDTO
+    public function create(User $user, BillData $data): BillDTO
     {
         $bills = session('guest_bills', []);
 
         $newBill = [
             'id' => $this->getNextId($bills),
-            'name' => $data['name'],
-            'amount' => $data['amount'],
-            'date' => $data['bill_date'] ?? null,
-            'type' => 'recurring',
-            'description' => $data['description'] ?? null,
+            'name' => $data->name,
+            'amount' => $data->amount,
+            'date' => $data->date,
+            'description' => $data->description,
             'created_at' => now()->toDateTimeString(),
         ];
 
@@ -60,7 +51,7 @@ class SessionBillRepository implements BillRepositoryInterface
     /**
      * Update an existing bill.
      */
-    public function update(User $user, int $billId, array $data): BillDTO
+    public function update(User $user, int $billId, BillData $data): BillDTO
     {
         $bills = session('guest_bills', []);
         $index = collect($bills)->search(fn($bill) => $bill['id'] === $billId);
@@ -70,10 +61,10 @@ class SessionBillRepository implements BillRepositoryInterface
         }
 
         $bills[$index] = array_merge($bills[$index], [
-            'name' => $data['name'] ?? $bills[$index]['name'],
-            'amount' => $data['amount'] ?? $bills[$index]['amount'],
-            'date' => $data['bill_date'] ?? $bills[$index]['date'],
-            'description' => $data['description'] ?? $bills[$index]['description'],
+            'name' => $data->name,
+            'amount' => $data->amount,
+            'date' => $data->date,
+            'description' => $data->description,
         ]);
 
         session(['guest_bills' => $bills]);
@@ -130,7 +121,6 @@ class SessionBillRepository implements BillRepositoryInterface
             name: $raw['name'],
             amount: $raw['amount'],
             date: $this->dateFormatter->format($raw['date']),
-            type: $raw['type'],
             description: $raw['description'] ?? null,
             created_at: $raw['created_at'] ?? now()->toDateTimeString(),
         );

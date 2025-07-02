@@ -2,9 +2,9 @@
 
 namespace App\Providers;
 
-use App\Repositories\Contracts\BillRepositoryInterface;
-use App\Repositories\Eloquent\DBBillRepository;
-use App\Repositories\Session\SessionBillRepository;
+use App\Repositories\Bill\BillRepositoryInterface;
+use App\Repositories\Bill\DBBillRepository;
+use App\Repositories\Bill\SessionBillRepository;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 

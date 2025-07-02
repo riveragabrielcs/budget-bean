@@ -1,17 +1,16 @@
 <?php
 
-namespace App\DTOs;
+namespace App\Data;
 
-final readonly class BillDTO
+use App\Enums\ExpenseType;
+
+final readonly class BillData
 {
     public function __construct(
-        public int     $id,
         public string  $name,
         public float   $amount,
         public ?string $date,
         public ?string $description,
-        public string $created_at
-    )
-    {
+    ) {
     }
 }

@@ -781,7 +781,7 @@ const closeModals = () => {
                                 class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-3 px-4 rounded-lg transition duration-200 disabled:opacity-50"
                             >
                                 <span v-if="editGoalForm.processing">Saving...</span>
-                                <span v-else">Save Changes</span>
+                                <span v-else>Save Changes</span>
                             </button>
                         </div>
                     </form>

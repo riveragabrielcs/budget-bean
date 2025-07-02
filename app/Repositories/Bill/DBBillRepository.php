@@ -1,15 +1,20 @@
 <?php
 
-namespace App\Repositories\Eloquent;
+namespace App\Repositories\Bill;
 
+use App\Data\BillData;
 use App\DTOs\BillDTO;
 use App\Models\RecurringBill;
 use App\Models\User;
-use App\Repositories\Contracts\BillRepositoryInterface;
+use App\Services\BillDateFormatter;
 use Illuminate\Support\Collection;
 
 class DBBillRepository implements BillRepositoryInterface
 {
+    public function __construct(
+        private BillDateFormatter $dateFormatter
+    ) {}
+
     /**
      *  Retrieve bills for a user from the database.
      *
@@ -21,27 +26,19 @@ class DBBillRepository implements BillRepositoryInterface
         return $user->recurringBills()
             ->orderBy('created_at', 'desc')
             ->get()
-            ->map(fn($bill) => new BillDTO(
-                id: $bill->id,
-                name: $bill->name,
-                amount: $bill->amount,
-                date: $bill->formatted_bill_date,
-                type: 'recurring',
-                description: $bill->description,
-                created_at: $bill->created_at->toDateTimeString()
-            ));
+            ->map(fn($bill) => $this->mapToDTO($bill));
     }
 
     /**
      * Create a new bill for the user.
      */
-    public function create(User $user, array $data): BillDTO
+    public function create(User $user, BillData $data): BillDTO
     {
         $bill = $user->recurringBills()->create([
-            'name' => $data['name'],
-            'amount' => $data['amount'],
-            'bill_date' => $data['bill_date'] ?? null,
-            'description' => $data['description'] ?? null,
+            'name' => $data->name,
+            'amount' => $data->amount,
+            'bill_date' => $data->date,
+            'description' => $data->description,
         ]);
 
         return $this->mapToDTO($bill);
@@ -50,15 +47,15 @@ class DBBillRepository implements BillRepositoryInterface
     /**
      * Update an existing bill.
      */
-    public function update(User $user, int $billId, array $data): BillDTO
+    public function update(User $user, int $billId, BillData $data): BillDTO
     {
         $bill = $user->recurringBills()->findOrFail($billId);
 
         $bill->update([
-            'name' => $data['name'] ?? $bill->name,
-            'amount' => $data['amount'] ?? $bill->amount,
-            'bill_date' => $data['bill_date'] ?? $bill->bill_date,
-            'description' => $data['description'] ?? $bill->description,
+            'name' => $data->name,
+            'amount' => $data->amount,
+            'bill_date' => $data->date,
+            'description' => $data->description,
         ]);
 
         return $this->mapToDTO($bill->fresh());
@@ -93,7 +90,6 @@ class DBBillRepository implements BillRepositoryInterface
             name: $bill->name,
             amount: $bill->amount,
             date: $this->dateFormatter->format($bill->bill_date),
-            type: 'recurring',
             description: $bill->description,
             created_at: $bill->created_at->toDateTimeString()
         );

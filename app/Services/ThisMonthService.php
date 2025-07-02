@@ -4,8 +4,9 @@ namespace App\Services;
 
 use App\DTOs\BillDTO;
 use App\DTOs\ThisMonthDTO;
+use App\Enums\ExpenseType;
 use App\Models\User;
-use App\Repositories\Contracts\BillRepositoryInterface;
+use App\Repositories\Bill\BillRepositoryInterface;
 use Illuminate\Support\Collection;
 
 class ThisMonthService
@@ -74,7 +75,7 @@ class ThisMonthService
                     'expense_date' => $expense->expense_date,
                     'formatted_expense_date' => $expense->formatted_expense_date,
                     'description' => $expense->description,
-                    'type' => 'one_time_expense',
+                    'type' => ExpenseType::ONE_TIME->value,
                     'created_at' => $expense->created_at,
                 ];
             })
@@ -99,7 +100,7 @@ class ThisMonthService
                 'bill_date' => $bill->date,
                 'formatted_bill_date' => $bill->date,
                 'description' => $bill->description,
-                'type' => 'recurring_bill',
+                'type' => ExpenseType::RECURRING->value,
                 'created_at' => $bill->created_at,
             ];
         })->toArray();
