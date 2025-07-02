@@ -16,8 +16,11 @@ class ThisMonthService
     ){}
     /**
      * Get all dashboard data for the current month.
+     *
+     * @param User|null $user
+     * @return ThisMonthDTO
      */
-    public function getThisMonthData(User $user): ThisMonthDTO
+    public function getThisMonthData(?User $user): ThisMonthDTO
     {
         $savingsGoals = $this->getSavingsGoals($user);
         $recurringBills = $this->bills->forUser($user);
