@@ -7,6 +7,7 @@ use App\DTOs\DashboardDTO;
 use App\Enums\ExpenseType;
 use App\Models\User;
 use App\Repositories\Bill\BillRepositoryInterface;
+use App\Repositories\Expense\ExpenseRepositoryInterface;
 use App\Repositories\SavingsGoal\SavingsGoalRepositoryInterface;
 use Illuminate\Support\Collection;
 
@@ -15,6 +16,7 @@ class DashboardService
     public function __construct(
         private BillRepositoryInterface $bills,
         private SavingsGoalRepositoryInterface $savingsGoals,
+        private ExpenseRepositoryInterface $expenses,
         private PlantGrowthService $plantGrowthService,
     ){}
 
@@ -31,7 +33,7 @@ class DashboardService
         $oneTimeExpenses = $this->getOneTimeExpenses($user);
         $monthlyExpenses = $this->combineExpenses($recurringBills, $oneTimeExpenses);
         $expenseStats = $this->calculateExpenseStats($recurringBills, $oneTimeExpenses);
-        $currentRevenue = $this->getCurrentRevenue($user);
+        $currentRevenue = $this->getCurrentRevenue($user); //TODO next in line to refactor into repos
         $budgetData = $this->calculateBudgetData($user, $currentRevenue, $expenseStats);
 
         return new DashboardDTO(
@@ -72,29 +74,7 @@ class DashboardService
      */
     private function getOneTimeExpenses(?User $user): array
     {
-        // Handle null user for guest users
-        if (!$user) {
-            return collect(session('guest_one_time_expenses', []))
-                ->sortByDesc('created_at')
-                ->values()
-                ->map(function ($expense) {
-                    return [
-                        'id' => $expense['id'],
-                        'name' => $expense['name'],
-                        'amount' => $expense['amount'],
-                        'expense_date' => $expense['expense_date'],
-                        'formatted_expense_date' => $expense['formatted_expense_date'],
-                        'description' => $expense['description'] ?? null,
-                        'type' => ExpenseType::ONE_TIME->value,
-                        'created_at' => $expense['created_at'],
-                    ];
-                })
-                ->toArray();
-        }
-
-        return $user->currentMonthExpenses()
-            ->orderBy('created_at', 'desc')
-            ->get()
+        return $this->expenses->getCurrentMonthExpenses($user)
             ->map(function ($expense) {
                 return [
                     'id' => $expense->id,

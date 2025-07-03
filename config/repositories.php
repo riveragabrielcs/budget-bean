@@ -9,6 +9,10 @@ return [
             'authenticated' => \App\Repositories\Bill\DBBillRepository::class,
             'guest' => \App\Repositories\Bill\SessionBillRepository::class,
         ],
+        \App\Repositories\Expense\ExpenseRepositoryInterface::class => [
+            'authenticated' => \App\Repositories\Expense\DBExpenseRepository::class,
+            'guest' => \App\Repositories\Expense\SessionExpenseRepository::class,
+        ],
         // BudgetBean future repositories...
     ],
 
