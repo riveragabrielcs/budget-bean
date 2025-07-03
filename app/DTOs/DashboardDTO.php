@@ -2,7 +2,7 @@
 
 namespace App\DTOs;
 
-final readonly class ThisMonthDTO
+final readonly class DashboardDTO
 {
     public function __construct(
         public array $savingsGoals,

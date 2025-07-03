@@ -3,14 +3,14 @@
 namespace App\Services;
 
 use App\DTOs\BillDTO;
-use App\DTOs\ThisMonthDTO;
+use App\DTOs\DashboardDTO;
 use App\Enums\ExpenseType;
 use App\Models\User;
 use App\Repositories\Bill\BillRepositoryInterface;
 use App\Repositories\SavingsGoal\SavingsGoalRepositoryInterface;
 use Illuminate\Support\Collection;
 
-class ThisMonthService
+class DashboardService
 {
     public function __construct(
         private BillRepositoryInterface $bills,
@@ -22,9 +22,9 @@ class ThisMonthService
      * Get all dashboard data for the current month.
      *
      * @param User|null $user
-     * @return ThisMonthDTO
+     * @return DashboardDTO
      */
-    public function getThisMonthData(?User $user): ThisMonthDTO
+    public function getDashboardSummary(?User $user): DashboardDTO
     {
         $savingsGoals = $this->getSavingsGoals($user);
         $recurringBills = $this->bills->forUser($user);
@@ -34,7 +34,7 @@ class ThisMonthService
         $currentRevenue = $this->getCurrentRevenue($user);
         $budgetData = $this->calculateBudgetData($user, $currentRevenue, $expenseStats);
 
-        return new ThisMonthDTO(
+        return new DashboardDTO(
             savingsGoals: $savingsGoals,
             monthlyExpenses: $monthlyExpenses,
             expenseStats: $expenseStats,
