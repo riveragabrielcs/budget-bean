@@ -16,13 +16,18 @@ class DBBillRepository implements BillRepositoryInterface
     ) {}
 
     /**
-     *  Retrieve bills for a user from the database.
+     * Retrieve bills for a user from the database.
      *
-     * @param User $user
+     * @param User|null $user
      * @return Collection<BillDTO>
+     * @throws \InvalidArgumentException
      */
-    public function forUser(User $user): Collection
+    public function forUser(?User $user): Collection
     {
+        if (!$user) {
+            throw new \InvalidArgumentException('User is required for database operations');
+        }
+
         return $user->recurringBills()
             ->orderBy('created_at', 'desc')
             ->get()
@@ -32,8 +37,12 @@ class DBBillRepository implements BillRepositoryInterface
     /**
      * Create a new bill for the user.
      */
-    public function create(User $user, BillData $data): BillDTO
+    public function create(?User $user, BillData $data): BillDTO
     {
+        if (!$user) {
+            throw new \InvalidArgumentException('User is required for database operations');
+        }
+
         $bill = $user->recurringBills()->create([
             'name' => $data->name,
             'amount' => $data->amount,
@@ -47,8 +56,12 @@ class DBBillRepository implements BillRepositoryInterface
     /**
      * Update an existing bill.
      */
-    public function update(User $user, int $billId, BillData $data): BillDTO
+    public function update(?User $user, int $billId, BillData $data): BillDTO
     {
+        if (!$user) {
+            throw new \InvalidArgumentException('User is required for database operations');
+        }
+
         $bill = $user->recurringBills()->findOrFail($billId);
 
         $bill->update([
@@ -64,8 +77,12 @@ class DBBillRepository implements BillRepositoryInterface
     /**
      * Delete a bill.
      */
-    public function delete(User $user, int $billId): bool
+    public function delete(?User $user, int $billId): bool
     {
+        if (!$user) {
+            throw new \InvalidArgumentException('User is required for database operations');
+        }
+
         $bill = $user->recurringBills()->findOrFail($billId);
         return $bill->delete();
     }
@@ -73,8 +90,12 @@ class DBBillRepository implements BillRepositoryInterface
     /**
      * Find a specific bill by ID for the user.
      */
-    public function findForUser(User $user, int $billId): ?BillDTO
+    public function findForUser(?User $user, int $billId): ?BillDTO
     {
+        if (!$user) {
+            throw new \InvalidArgumentException('User is required for database operations');
+        }
+
         $bill = $user->recurringBills()->find($billId);
 
         return $bill ? $this->mapToDTO($bill) : null;

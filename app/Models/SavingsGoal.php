@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\PlantGrowthService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -81,19 +82,7 @@ class SavingsGoal extends Model
      */
     public function getPlantEmojiAttribute(): string
     {
-        $progress = $this->progress_percentage;
-
-        if ($progress >= 100) {
-            return '🌳'; // Full grown tree
-        } elseif ($progress >= 75) {
-            return '🌿'; // Flourishing plant
-        } elseif ($progress >= 50) {
-            return '🌱'; // Growing sprout
-        } elseif ($progress >= 25) {
-            return '🌾'; // Young plant
-        } else {
-            return '🌰'; // Seed
-        }
+        return app(PlantGrowthService::class)->getPlantEmoji($this->progress_percentage);
     }
 
     /**
@@ -101,19 +90,7 @@ class SavingsGoal extends Model
      */
     public function getGrowthStageAttribute(): string
     {
-        $progress = $this->progress_percentage;
-
-        if ($progress >= 100) {
-            return 'Fully Grown!';
-        } elseif ($progress >= 75) {
-            return 'Almost There!';
-        } elseif ($progress >= 50) {
-            return 'Growing Strong';
-        } elseif ($progress >= 25) {
-            return 'Taking Root';
-        } else {
-            return 'Just Planted';
-        }
+        return app(PlantGrowthService::class)->getGrowthStage($this->progress_percentage);
     }
 
     /**

@@ -17,10 +17,10 @@ class SessionBillRepository implements BillRepositoryInterface
     /**
      * Retrieve bills for a user from the session.
      *
-     * @param User $user
+     * @param User|null $user (ignored for session storage)
      * @return Collection<BillDTO>
      */
-    public function forUser(User $user): Collection
+    public function forUser(?User $user): Collection
     {
         return collect(session('guest_bills', []))
             ->map(fn($raw) => $this->mapToDTO($raw));
@@ -29,7 +29,7 @@ class SessionBillRepository implements BillRepositoryInterface
     /**
      * Create a new bill for the user.
      */
-    public function create(User $user, BillData $data): BillDTO
+    public function create(?User $user, BillData $data): BillDTO
     {
         $bills = session('guest_bills', []);
 
@@ -51,7 +51,7 @@ class SessionBillRepository implements BillRepositoryInterface
     /**
      * Update an existing bill.
      */
-    public function update(User $user, int $billId, BillData $data): BillDTO
+    public function update(?User $user, int $billId, BillData $data): BillDTO
     {
         $bills = session('guest_bills', []);
         $index = collect($bills)->search(fn($bill) => $bill['id'] === $billId);
@@ -75,7 +75,7 @@ class SessionBillRepository implements BillRepositoryInterface
     /**
      * Delete a bill.
      */
-    public function delete(User $user, int $billId): bool
+    public function delete(?User $user, int $billId): bool
     {
         $bills = session('guest_bills', []);
         $filtered = collect($bills)->reject(fn($bill) => $bill['id'] === $billId);
@@ -91,7 +91,7 @@ class SessionBillRepository implements BillRepositoryInterface
     /**
      * Find a specific bill by ID for the user.
      */
-    public function findForUser(User $user, int $billId): ?BillDTO
+    public function findForUser(?User $user, int $billId): ?BillDTO
     {
         $bills = session('guest_bills', []);
         $bill = collect($bills)->first(fn($bill) => $bill['id'] === $billId);

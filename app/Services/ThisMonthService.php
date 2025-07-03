@@ -7,13 +7,17 @@ use App\DTOs\ThisMonthDTO;
 use App\Enums\ExpenseType;
 use App\Models\User;
 use App\Repositories\Bill\BillRepositoryInterface;
+use App\Repositories\SavingsGoal\SavingsGoalRepositoryInterface;
 use Illuminate\Support\Collection;
 
 class ThisMonthService
 {
     public function __construct(
         private BillRepositoryInterface $bills,
+        private SavingsGoalRepositoryInterface $savingsGoals,
+        private PlantGrowthService $plantGrowthService,
     ){}
+
     /**
      * Get all dashboard data for the current month.
      *
@@ -42,21 +46,22 @@ class ThisMonthService
     /**
      * Get active savings goals formatted for dashboard.
      */
-    private function getSavingsGoals(User $user): array
+    private function getSavingsGoals(?User $user): array
     {
-        return $user->activeSavingsGoals()
-            ->orderBy('created_at', 'desc')
-            ->get()
+        return $this->savingsGoals->getActiveSavingsGoals($user)
             ->map(function ($goal) {
+                $progressPercentage = $goal->getProgressPercentage();
+                $plantStatus = $this->plantGrowthService->getPlantStatus($progressPercentage);
+
                 return [
                     'id' => $goal->id,
                     'name' => $goal->name,
                     'target_amount' => $goal->target_amount,
                     'current_amount' => $goal->current_amount,
-                    'progress_percentage' => $goal->progress_percentage,
-                    'plant_emoji' => $goal->plant_emoji,
-                    'growth_stage' => $goal->growth_stage,
-                    'remaining_amount' => $goal->remaining_amount,
+                    'progress_percentage' => $progressPercentage,
+                    'plant_emoji' => $plantStatus->plantEmoji,
+                    'growth_stage' => $plantStatus->growthStage,
+                    'remaining_amount' => $goal->getRemainingAmount(),
                 ];
             })
             ->toArray();
@@ -65,8 +70,28 @@ class ThisMonthService
     /**
      * Get one-time expenses for current month formatted for dashboard.
      */
-    private function getOneTimeExpenses(User $user): array
+    private function getOneTimeExpenses(?User $user): array
     {
+        // Handle null user for guest users
+        if (!$user) {
+            return collect(session('guest_one_time_expenses', []))
+                ->sortByDesc('created_at')
+                ->values()
+                ->map(function ($expense) {
+                    return [
+                        'id' => $expense['id'],
+                        'name' => $expense['name'],
+                        'amount' => $expense['amount'],
+                        'expense_date' => $expense['expense_date'],
+                        'formatted_expense_date' => $expense['formatted_expense_date'],
+                        'description' => $expense['description'] ?? null,
+                        'type' => ExpenseType::ONE_TIME->value,
+                        'created_at' => $expense['created_at'],
+                    ];
+                })
+                ->toArray();
+        }
+
         return $user->currentMonthExpenses()
             ->orderBy('created_at', 'desc')
             ->get()
@@ -140,8 +165,26 @@ class ThisMonthService
     /**
      * Get current month revenue data.
      */
-    private function getCurrentRevenue(User $user): ?array
+    private function getCurrentRevenue(?User $user): ?array
     {
+        // Handle null user for guest users
+        if (!$user) {
+            $guestRevenue = session('guest_revenue');
+            if (!$guestRevenue) {
+                return null;
+            }
+
+            return [
+                'total_revenue' => $guestRevenue['total_revenue'],
+                'calculation_method' => $guestRevenue['calculation_method'],
+                'paycheck_amount' => $guestRevenue['paycheck_amount'] ?? null,
+                'paycheck_count' => $guestRevenue['paycheck_count'] ?? null,
+                'monthly_savings_goal' => $guestRevenue['monthly_savings_goal'] ?? 0,
+                'source_description' => $guestRevenue['source_description'] ?? null,
+                'revenue_period' => $guestRevenue['revenue_period'] ?? null,
+            ];
+        }
+
         $currentRevenue = $user->currentMonthRevenue();
 
         if (!$currentRevenue) {
@@ -162,7 +205,7 @@ class ThisMonthService
     /**
      * Calculate budget data including drought status.
      */
-    private function calculateBudgetData(User $user, ?array $currentRevenue, array $expenseStats): array
+    private function calculateBudgetData(?User $user, ?array $currentRevenue, array $expenseStats): array
     {
         if ($currentRevenue) {
             $monthlyBudget = max($currentRevenue['total_revenue'] - ($currentRevenue['monthly_savings_goal'] ?? 0), 0);
