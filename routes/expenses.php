@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth')->prefix('expenses')->name('expenses.')->group(function () {
     Route::post('/', [MonthlyExpenseController::class, 'store'])->name('store');
     Route::post('/ajax', [MonthlyExpenseController::class, 'storeAjax'])->name('store.ajax');
-    Route::patch('/{monthlyExpense}', [MonthlyExpenseController::class, 'update'])->name('update');
-    Route::delete('/{monthlyExpense}', [MonthlyExpenseController::class, 'destroy'])->name('destroy');
-    Route::delete('/{monthlyExpense}/ajax', [MonthlyExpenseController::class, 'destroyAjax'])->name('destroy.ajax');
+    Route::patch('/{expenseId}', [MonthlyExpenseController::class, 'update'])->name('update');
+    Route::delete('/{expenseId}', [MonthlyExpenseController::class, 'destroy'])->name('destroy');
+    Route::delete('/{expenseId}/ajax', [MonthlyExpenseController::class, 'destroyAjax'])->name('destroy.ajax');
 });

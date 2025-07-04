@@ -18,4 +18,23 @@ final readonly class ExpenseDTO
     )
     {
     }
+
+    /**
+     * Convert to array for serialization.
+     */
+    public function toArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'amount' => $this->amount,
+            'expense_date' => $this->expense_date,
+            'formatted_expense_date' => $this->formatted_expense_date,
+            'description' => $this->description,
+            'budget_month' => $this->budget_month,
+            'budget_year' => $this->budget_year,
+            'budget_period' => $this->budget_period,
+            'created_at' => $this->created_at,
+        ];
+    }
 }
