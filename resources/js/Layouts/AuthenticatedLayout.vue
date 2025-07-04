@@ -1,11 +1,11 @@
 <script setup>
-import { ref } from 'vue';
+import {ref} from 'vue';
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 import NavLink from '@/Components/NavLink.vue';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
-import { Link } from '@inertiajs/vue3';
+import {Link} from '@inertiajs/vue3';
 
 const showingNavigationDropdown = ref(false);
 </script>
@@ -97,57 +97,68 @@ const showingNavigationDropdown = ref(false);
                         <div class="hidden lg:ms-6 lg:flex lg:items-center">
                             <!-- Settings Dropdown -->
                             <div class="relative ms-3">
-                                <Dropdown align="right" width="56">
+                                <Dropdown align="right" width="56" v-if="$page.props.auth.user">
                                     <template #trigger>
-                                        <span class="inline-flex rounded-lg">
-                                            <button
-                                                type="button"
-                                                class="inline-flex items-center rounded-lg border border-emerald-200 bg-white px-4 py-2 text-sm font-medium leading-4 text-stone-600 transition duration-150 ease-in-out hover:text-emerald-600 hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
-                                            >
-                                                <div class="w-8 h-8 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-lg flex items-center justify-center mr-3">
-                                                    <span class="text-emerald-600 font-bold text-sm">
-                                                        {{ $page.props.auth.user.name.charAt(0) }}
-                                                    </span>
-                                                </div>
-                                                <span class="max-w-32 truncate">{{ $page.props.auth.user.name }}</span>
-
-                                                <svg
-                                                    class="-me-0.5 ms-2 h-4 w-4"
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    viewBox="0 0 20 20"
-                                                    fill="currentColor"
+                                        <div v-if="$page.props.auth.user">
+                                            <span class="inline-flex rounded-lg">
+                                                <button
+                                                    type="button"
+                                                    class="inline-flex items-center rounded-lg border border-emerald-200 bg-white px-4 py-2 text-sm font-medium leading-4 text-stone-600 transition duration-150 ease-in-out hover:text-emerald-600 hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
                                                 >
-                                                    <path
-                                                        fill-rule="evenodd"
-                                                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                                                        clip-rule="evenodd"
-                                                    />
-                                                </svg>
-                                            </button>
-                                        </span>
-                                    </template>
+                                                    <div
+                                                        class="w-8 h-8 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-lg flex items-center justify-center mr-3">
+                                                        <span class="text-emerald-600 font-bold text-sm">
+                                                            {{ $page.props.auth.user.name.charAt(0) }}
+                                                        </span>
+                                                    </div>
+                                                    <span class="max-w-32 truncate">{{
+                                                            $page.props.auth.user.name
+                                                        }}</span>
 
-                                    <template #content>
-                                        <div class="px-4 py-3 border-b border-emerald-100">
-                                            <div class="text-sm font-medium text-emerald-800">{{ $page.props.auth.user.name }}</div>
-                                            <div class="text-xs text-stone-500">{{ $page.props.auth.user.email }}</div>
+                                                    <svg
+                                                        class="-me-0.5 ms-2 h-4 w-4"
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        viewBox="0 0 20 20"
+                                                        fill="currentColor"
+                                                    >
+                                                        <path
+                                                            fill-rule="evenodd"
+                                                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                                            clip-rule="evenodd"
+                                                        />
+                                                    </svg>
+                                                </button>
+                                            </span>
                                         </div>
-                                        <DropdownLink
-                                            :href="route('profile.edit')"
-                                            class="flex items-center px-4 py-3 text-stone-700 hover:bg-emerald-50 hover:text-emerald-700"
-                                        >
-                                            <span class="mr-3">👤</span>
-                                            Profile
-                                        </DropdownLink>
-                                        <DropdownLink
-                                            :href="route('logout')"
-                                            method="post"
-                                            as="button"
-                                            class="flex items-center px-4 py-3 text-stone-700 hover:bg-emerald-50 hover:text-emerald-700 w-full text-left"
-                                        >
-                                            <span class="mr-3">🚪</span>
-                                            Log Out
-                                        </DropdownLink>
+                                    </template>
+                                    <template #content>
+                                        <div v-if="$page.props.auth.user">
+                                            <div class="px-4 py-3 border-b border-emerald-100">
+                                                <div class="text-sm font-medium text-emerald-800">
+                                                    {{ $page.props.auth.user.name }}
+                                                </div>
+                                                <div class="text-xs text-stone-500">{{
+                                                        $page.props.auth.user.email
+                                                    }}
+                                                </div>
+                                            </div>
+                                            <DropdownLink
+                                                :href="route('profile.edit')"
+                                                class="flex items-center px-4 py-3 text-stone-700 hover:bg-emerald-50 hover:text-emerald-700"
+                                            >
+                                                <span class="mr-3">👤</span>
+                                                Profile
+                                            </DropdownLink>
+                                            <DropdownLink
+                                                :href="route('logout')"
+                                                method="post"
+                                                as="button"
+                                                class="flex items-center px-4 py-3 text-stone-700 hover:bg-emerald-50 hover:text-emerald-700 w-full text-left"
+                                            >
+                                                <span class="mr-3">🚪</span>
+                                                Log Out
+                                            </DropdownLink>
+                                        </div>
                                     </template>
                                 </Dropdown>
                             </div>
@@ -259,8 +270,9 @@ const showingNavigationDropdown = ref(false);
 
                     <!-- Responsive Settings Options -->
                     <div class="border-t border-emerald-200 bg-white px-4 py-4">
-                        <div class="flex items-center mb-4">
-                            <div class="w-10 h-10 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-xl flex items-center justify-center mr-3">
+                        <div v-if="$page.props.auth.user" class="flex items-center mb-4">
+                            <div
+                                class="w-10 h-10 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-xl flex items-center justify-center mr-3">
                                 <span class="text-emerald-600 font-bold text-lg">
                                     {{ $page.props.auth.user.name.charAt(0) }}
                                 </span>
@@ -303,13 +315,13 @@ const showingNavigationDropdown = ref(false);
                 v-if="$slots.header"
             >
                 <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-                    <slot name="header" />
+                    <slot name="header"/>
                 </div>
             </header>
 
             <!-- Page Content -->
             <main>
-                <slot />
+                <slot/>
             </main>
         </div>
     </div>
