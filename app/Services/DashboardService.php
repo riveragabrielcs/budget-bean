@@ -8,17 +8,21 @@ use App\Enums\ExpenseType;
 use App\Models\User;
 use App\Repositories\Bill\BillRepositoryInterface;
 use App\Repositories\Expense\ExpenseRepositoryInterface;
+use App\Repositories\Revenue\RevenueRepositoryInterface;
 use App\Repositories\SavingsGoal\SavingsGoalRepositoryInterface;
 use Illuminate\Support\Collection;
 
 class DashboardService
 {
     public function __construct(
-        private BillRepositoryInterface $bills,
-        private SavingsGoalRepositoryInterface $savingsGoals,
-        private ExpenseRepositoryInterface $expenses,
-        private PlantGrowthService $plantGrowthService,
-    ){}
+        private BillRepositoryInterface        $billRepository,
+        private SavingsGoalRepositoryInterface $savingsGoalRepository,
+        private ExpenseRepositoryInterface     $expenseRepository,
+        private RevenueRepositoryInterface     $revenueRepository,
+        private PlantGrowthService             $plantGrowthService,
+    )
+    {
+    }
 
     /**
      * Get all dashboard data for the current month.
@@ -29,11 +33,11 @@ class DashboardService
     public function getDashboardSummary(?User $user): DashboardDTO
     {
         $savingsGoals = $this->getSavingsGoals($user);
-        $recurringBills = $this->bills->forUser($user);
+        $recurringBills = $this->billRepository->forUser($user);
         $oneTimeExpenses = $this->getOneTimeExpenses($user);
         $monthlyExpenses = $this->combineExpenses($recurringBills, $oneTimeExpenses);
         $expenseStats = $this->calculateExpenseStats($recurringBills, $oneTimeExpenses);
-        $currentRevenue = $this->getCurrentRevenue($user); //TODO next in line to refactor into repos
+        $currentRevenue = $this->getCurrentRevenue($user);
         $budgetData = $this->calculateBudgetData($user, $currentRevenue, $expenseStats);
 
         return new DashboardDTO(
@@ -50,7 +54,7 @@ class DashboardService
      */
     private function getSavingsGoals(?User $user): array
     {
-        return $this->savingsGoals->getActiveSavingsGoals($user)
+        return $this->savingsGoalRepository->getActiveSavingsGoals($user)
             ->map(function ($goal) {
                 $progressPercentage = $goal->getProgressPercentage();
                 $plantStatus = $this->plantGrowthService->getPlantStatus($progressPercentage);
@@ -74,7 +78,7 @@ class DashboardService
      */
     private function getOneTimeExpenses(?User $user): array
     {
-        return $this->expenses->getCurrentMonthExpenses($user)
+        return $this->expenseRepository->getCurrentMonthExpenses($user)
             ->map(function ($expense) {
                 return [
                     'id' => $expense->id,
@@ -143,47 +147,25 @@ class DashboardService
     }
 
     /**
-     * Get current month revenue data.
+     * Get current month revenue data using repository pattern.
+     *
+     * @param User|null $user
+     * @return array|null
      */
     private function getCurrentRevenue(?User $user): ?array
     {
-        // Handle null user for guest users
-        if (!$user) {
-            $guestRevenue = session('guest_revenue');
-            if (!$guestRevenue) {
-                return null;
-            }
+        $revenueDTO = $this->revenueRepository->getCurrentMonthRevenue($user);
 
-            return [
-                'total_revenue' => $guestRevenue['total_revenue'],
-                'calculation_method' => $guestRevenue['calculation_method'],
-                'paycheck_amount' => $guestRevenue['paycheck_amount'] ?? null,
-                'paycheck_count' => $guestRevenue['paycheck_count'] ?? null,
-                'monthly_savings_goal' => $guestRevenue['monthly_savings_goal'] ?? 0,
-                'source_description' => $guestRevenue['source_description'] ?? null,
-                'revenue_period' => $guestRevenue['revenue_period'] ?? null,
-            ];
-        }
-
-        $currentRevenue = $user->currentMonthRevenue();
-
-        if (!$currentRevenue) {
-            return null;
-        }
-
-        return [
-            'total_revenue' => $currentRevenue->total_revenue,
-            'calculation_method' => $currentRevenue->calculation_method,
-            'paycheck_amount' => $currentRevenue->paycheck_amount,
-            'paycheck_count' => $currentRevenue->paycheck_count,
-            'monthly_savings_goal' => $currentRevenue->monthly_savings_goal,
-            'source_description' => $currentRevenue->source_description,
-            'revenue_period' => $currentRevenue->revenue_period,
-        ];
+        return $revenueDTO?->toArray();
     }
 
     /**
      * Calculate budget data including drought status.
+     *
+     * @param User|null $user
+     * @param array|null $currentRevenue
+     * @param array $expenseStats
+     * @return array
      */
     private function calculateBudgetData(?User $user, ?array $currentRevenue, array $expenseStats): array
     {
