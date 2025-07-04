@@ -47,7 +47,7 @@ class MonthlyRevenueController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Revenue updated successfully!',
-            'revenue' => $this->revenueService->formatForResponse($revenue)
+            'revenue' => $revenue->toArray()
         ]);
     }
 
@@ -60,7 +60,7 @@ class MonthlyRevenueController extends Controller
 
         return response()->json([
             'success' => true,
-            'revenue' => $this->revenueService->formatForResponse($revenue),
+            'revenue' => $revenue?->toArray(),
         ]);
     }
 

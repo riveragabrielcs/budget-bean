@@ -81,24 +81,4 @@ class RevenueService
     {
         return $this->revenuesRepo->delete($user);
     }
-
-    /**
-     * Format revenue data for API responses.
-     */
-    public function formatForResponse(?RevenueDTO $revenue): ?array
-    {
-        if (!$revenue) {
-            return null;
-        }
-
-        return [
-            'total_revenue' => $revenue->total_revenue,
-            'calculation_method' => $revenue->calculation_method,
-            'paycheck_amount' => $revenue->paycheck_amount,
-            'paycheck_count' => $revenue->paycheck_count,
-            'monthly_savings_goal' => $revenue->monthly_savings_goal,
-            'source_description' => $revenue->source_description,
-            'revenue_period' => $revenue->revenue_period,
-        ];
-    }
 }
