@@ -2,47 +2,57 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\RecurringBill;
-use Illuminate\Http\Request;
+use App\Exceptions\BillNotFoundException;
+use App\Http\Requests\Bill\StoreBillRequest;
+use App\Http\Requests\Bill\UpdateBillRequest;
+use App\Http\Resources\BillResource;
+use App\Services\BillService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class RecurringBillController extends Controller
 {
+    public function __construct(
+        private BillService $billService
+    ) {}
+
     /**
      * Display the user's recurring bills.
      */
-    public function index(): Response
+    public function index(Request $request): Response|JsonResponse
     {
         $user = auth()->user();
+        $bills = $this->billService->getBillsForUser($user);
+        $stats = $this->billService->calculateBillStats($user);
 
-        $recurringBills = $user->recurringBills()
-            ->orderBy('created_at', 'desc')
-            ->get()
-            ->map(function ($bill) {
-                return [
-                    'id' => $bill->id,
-                    'name' => $bill->name,
-                    'amount' => $bill->amount,
-                    'bill_date' => $bill->bill_date,
-                    'formatted_bill_date' => $bill->formatted_bill_date,
-                    'next_due_date' => $bill->next_due_date,
-                    'description' => $bill->description,
-                    'created_at' => $bill->created_at->format('M d, Y'),
-                ];
-            });
+        // Format bills for frontend
+        $formattedBills = $bills->map(function ($bill) {
+            return [
+                'id' => $bill->id,
+                'name' => $bill->name,
+                'amount' => $bill->amount,
+                'bill_date' => $bill->date ? (int) str_replace(['st', 'nd', 'rd', 'th'], '', $bill->date) : null,
+                'formatted_bill_date' => $bill->date,
+                'next_due_date' => $this->billService->calculateNextDueDate($bill->date),
+                'description' => $bill->description,
+                'created_at' => $bill->created_at,
+            ];
+        });
 
-        $stats = [
-            'total_bills' => $recurringBills->count(),
-            'total_monthly_amount' => $recurringBills->sum('amount'),
-            'average_bill_amount' => $recurringBills->count() > 0
-                ? $recurringBills->avg('amount')
-                : 0,
-        ];
+        if ($request->expectsJson()) {
+            return response()->json([
+                'data' => [
+                    'bills' => BillResource::collection($bills),
+                    'stats' => $stats
+                ]
+            ]);
+        }
 
         return Inertia::render('Bills/MyRecurringBills', [
-            'recurringBills' => $recurringBills,
+            'recurringBills' => $formattedBills,
             'stats' => $stats,
         ]);
     }
@@ -50,55 +60,149 @@ class RecurringBillController extends Controller
     /**
      * Store a newly created recurring bill.
      */
-    public function store(Request $request): RedirectResponse
+    public function store(StoreBillRequest $request): RedirectResponse|JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'amount' => 'required|numeric|min:0.01|max:9999999.99',
-            'bill_date' => 'nullable|integer|min:1|max:31',
-            'description' => 'nullable|string|max:500',
-        ]);
+        try {
+            $user = auth()->user();
+            $bill = $this->billService->createBill($user, $request);
 
-        auth()->user()->recurringBills()->create($validated);
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Your recurring bill has been added! 💳',
+                    'data' => new BillResource($bill)
+                ], 201);
+            }
 
-        return redirect()->route('bills.index')->with('success', 'Your recurring bill has been added! 💳');
+            return redirect()->route('bills.index')
+                ->with('success', 'Your recurring bill has been added! 💳');
+
+        } catch (\Exception $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Failed to create bill.',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+
+            return back()->withErrors(['error' => 'Failed to create bill: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Display the specified recurring bill.
+     */
+    public function show(Request $request, int $billId): JsonResponse|RedirectResponse
+    {
+        try {
+            $user = auth()->user();
+            $bill = $this->billService->findBillForUser($user, $billId);
+
+            if (!$bill) {
+                throw new BillNotFoundException("Bill with ID {$billId} not found");
+            }
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'data' => new BillResource($bill)
+                ]);
+            }
+
+            // For non-JSON requests, redirect to index
+            return redirect()->route('bills.index');
+
+        } catch (BillNotFoundException $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => $e->getMessage()
+                ], 404);
+            }
+
+            return redirect()->route('bills.index')
+                ->withErrors(['error' => $e->getMessage()]);
+        }
     }
 
     /**
      * Update the specified recurring bill.
      */
-    public function update(Request $request, RecurringBill $recurringBill): RedirectResponse
+    public function update(UpdateBillRequest $request, int $billId): RedirectResponse|JsonResponse
     {
-        // Ensure the bill belongs to the authenticated user
-        if ($recurringBill->user_id !== auth()->id()) {
-            abort(403);
+        try {
+            $user = auth()->user();
+            $bill = $this->billService->updateBill($user, $billId, $request);
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Your recurring bill has been updated! ✏️',
+                    'data' => new BillResource($bill)
+                ]);
+            }
+
+            return redirect()->route('bills.index')
+                ->with('success', 'Your recurring bill has been updated! ✏️');
+
+        } catch (BillNotFoundException $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => $e->getMessage()
+                ], 404);
+            }
+
+            return redirect()->route('bills.index')
+                ->withErrors(['error' => $e->getMessage()]);
+
+        } catch (\Exception $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Failed to update bill.',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+
+            return back()->withErrors(['error' => 'Failed to update bill: ' . $e->getMessage()]);
         }
-
-        $validated = $request->validate([
-            'name' => 'sometimes|required|string|max:255',
-            'amount' => 'sometimes|required|numeric|min:0.01|max:9999999.99',
-            'bill_date' => 'sometimes|nullable|integer|min:1|max:31',
-            'description' => 'sometimes|nullable|string|max:500',
-        ]);
-
-        $recurringBill->update($validated);
-
-        return redirect()->route('bills.index')->with('success', 'Your recurring bill has been updated! ✏️');
     }
 
     /**
      * Remove the specified recurring bill.
      */
-    public function destroy(RecurringBill $recurringBill): RedirectResponse
+    public function destroy(Request $request, int $billId): RedirectResponse|JsonResponse
     {
-        // Ensure the bill belongs to the authenticated user
-        if ($recurringBill->user_id !== auth()->id()) {
-            abort(403);
+        try {
+            $user = auth()->user();
+            $result = $this->billService->deleteBill($user, $billId);
+
+            $message = "Your {$result['name']} recurring bill has been deleted.";
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => $message,
+                    'data' => $result
+                ]);
+            }
+
+            return redirect()->route('bills.index')
+                ->with('success', $message);
+
+        } catch (BillNotFoundException $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => $e->getMessage()
+                ], 404);
+            }
+
+            return redirect()->route('bills.index')
+                ->withErrors(['error' => $e->getMessage()]);
+
+        } catch (\Exception $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Failed to delete bill.',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+
+            return back()->withErrors(['error' => 'Failed to delete bill: ' . $e->getMessage()]);
         }
-
-        $billName = $recurringBill->name;
-        $recurringBill->delete();
-
-        return redirect()->route('bills.index')->with('success', "Your {$billName} recurring bill has been deleted.");
     }
 }
