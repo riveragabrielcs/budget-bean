@@ -32,6 +32,7 @@ class SessionRevenueRepository implements RevenueRepositoryInterface
     public function createOrUpdate(?User $user, RevenueData $data): RevenueDTO
     {
         $now = now();
+        $existingRevenue = session('guest_revenue', []);
 
         $revenueArray = [
             'total_revenue' => $data->total_revenue,
@@ -41,7 +42,7 @@ class SessionRevenueRepository implements RevenueRepositoryInterface
             'monthly_savings_goal' => $data->monthly_savings_goal,
             'revenue_month' => $now->month,
             'revenue_year' => $now->year,
-            'created_at' => $now->toDateTimeString(),
+            'created_at' => $existingRevenue['created_at'] ?? $now->toDateTimeString(),
         ];
 
         session(['guest_revenue' => $revenueArray]);
