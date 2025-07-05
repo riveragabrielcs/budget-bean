@@ -7,11 +7,11 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth')->prefix('garden')->name('garden.')->group(function () {
     Route::get('/', [SavingsGoalController::class, 'index'])->name('index');
     Route::post('/', [SavingsGoalController::class, 'store'])->name('store');
-    Route::patch('/{savingsGoal}', [SavingsGoalController::class, 'update'])->name('update');
-    Route::delete('/{savingsGoal}', [SavingsGoalController::class, 'destroy'])->name('destroy');
+    Route::patch('/{goalId}', [SavingsGoalController::class, 'update'])->name('update');
+    Route::delete('/{goalId}', [SavingsGoalController::class, 'destroy'])->name('destroy');
 
     // Savings actions
-    Route::post('/{savingsGoal}/add-savings', [SavingsGoalController::class, 'addSavings'])->name('add-savings');
-    Route::post('/{savingsGoal}/withdraw', [SavingsGoalController::class, 'withdraw'])->name('withdraw');
-    Route::post('/{savingsGoal}/complete', [SavingsGoalController::class, 'complete'])->name('complete');
+    Route::post('/{goalId}/add-savings', [SavingsGoalController::class, 'addSavings'])->name('add-savings');
+    Route::post('/{goalId}/withdraw', [SavingsGoalController::class, 'withdraw'])->name('withdraw');
+    Route::post('/{goalId}/complete', [SavingsGoalController::class, 'complete'])->name('complete');
 });

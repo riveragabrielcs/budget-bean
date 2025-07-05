@@ -34,4 +34,12 @@ final readonly class SavingsGoalDTO
     {
         return max($this->target_amount - $this->current_amount, 0);
     }
+
+    /**
+     * Check if the goal has been reached.
+     */
+    public function isReached(): bool
+    {
+        return $this->current_amount >= $this->target_amount;
+    }
 }

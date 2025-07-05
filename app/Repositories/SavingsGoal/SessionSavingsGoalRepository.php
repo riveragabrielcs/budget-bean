@@ -4,14 +4,24 @@ namespace App\Repositories\SavingsGoal;
 
 use App\DTOs\SavingsGoalDTO;
 use App\Models\User;
-use App\Services\PlantGrowthService;
 use Illuminate\Support\Collection;
 
 class SessionSavingsGoalRepository implements SavingsGoalRepositoryInterface
 {
-    public function __construct(
-        private PlantGrowthService $plantGrowthService
-    ) {}
+    /**
+     * Retrieve all savings goals from the session.
+     *
+     * @param User|null $user (ignored for session storage)
+     * @return Collection<SavingsGoalDTO>
+     */
+    public function getAllSavingsGoals(?User $user): Collection
+    {
+        return collect(session('guest_savings_goals', []))
+            ->sortByDesc('created_at')
+            ->values()
+            ->map(fn($raw) => $this->mapToDTO($raw));
+    }
+
     /**
      * Retrieve active savings goals from the session.
      *
@@ -158,5 +168,4 @@ class SessionSavingsGoalRepository implements SavingsGoalRepositoryInterface
             created_at: $raw['created_at'] ?? now()->toDateTimeString()
         );
     }
-
 }

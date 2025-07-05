@@ -10,6 +10,25 @@ use Illuminate\Support\Collection;
 class DBSavingsGoalRepository implements SavingsGoalRepositoryInterface
 {
     /**
+     * Retrieve all savings goals for a user from the database.
+     *
+     * @param User|null $user
+     * @return Collection<SavingsGoalDTO>
+     * @throws \InvalidArgumentException
+     */
+    public function getAllSavingsGoals(?User $user): Collection
+    {
+        if (!$user) {
+            throw new \InvalidArgumentException('User is required for database operations');
+        }
+
+        return $user->savingsGoals()
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(fn($goal) => $this->mapToDTO($goal));
+    }
+
+    /**
      * Retrieve active savings goals for a user from the database.
      *
      * @param User|null $user
@@ -56,6 +75,7 @@ class DBSavingsGoalRepository implements SavingsGoalRepositoryInterface
             'description' => $data['description'] ?? null,
             'target_amount' => $data['target_amount'],
             'current_amount' => $data['current_amount'] ?? 0,
+            'is_completed' => false, // Explicitly set to false to ensure new goals are not completed
         ]);
 
         return $this->mapToDTO($goal);
@@ -121,7 +141,7 @@ class DBSavingsGoalRepository implements SavingsGoalRepositoryInterface
             description: $goal->description,
             target_amount: $goal->target_amount,
             current_amount: $goal->current_amount,
-            is_completed: $goal->is_completed,
+            is_completed: (bool) $goal->is_completed, // Cast to bool to be safe
             created_at: $goal->created_at->toDateTimeString()
         );
     }

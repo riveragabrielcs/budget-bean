@@ -2,81 +2,72 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\SavingsGoal;
-use App\Models\WaterBank;
-use Illuminate\Http\Request;
+use App\Exceptions\SavingsGoalNotFoundException;
+use App\Http\Requests\SavingsGoal\AddSavingsRequest;
+use App\Http\Requests\SavingsGoal\StoreSavingsGoalRequest;
+use App\Http\Requests\SavingsGoal\UpdateSavingsGoalRequest;
+use App\Http\Requests\SavingsGoal\WithdrawSavingsRequest;
+use App\Http\Resources\SavingsGoalResource;
+use App\Services\PlantGrowthService;
+use App\Services\SavingsGoalService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class SavingsGoalController extends Controller
 {
+    public function __construct(
+        private SavingsGoalService $savingsGoalService,
+        private PlantGrowthService $plantGrowthService
+    )
+    {
+    }
+
     /**
      * Display the user's savings goals garden.
      */
-    public function index(): Response
+    public function index(Request $request): Response|JsonResponse
     {
         $user = auth()->user();
+        $savingsGoals = $this->savingsGoalService->getSavingsGoalsForUser($user);
+        $stats = $this->savingsGoalService->calculateSavingsGoalStats($user);
+        $waterBankData = $this->savingsGoalService->getWaterBankData($user);
 
-        $savingsGoals = $user->savingsGoals()
-            ->orderBy('created_at', 'desc')
-            ->get()
-            ->map(function ($goal) {
-                return [
-                    'id' => $goal->id,
-                    'name' => $goal->name,
-                    'description' => $goal->description,
-                    'target_amount' => $goal->target_amount,
-                    'current_amount' => $goal->current_amount,
-                    'remaining_amount' => $goal->remaining_amount,
-                    'progress_percentage' => $goal->progress_percentage,
-                    'plant_emoji' => $goal->plant_emoji,
-                    'growth_stage' => $goal->growth_stage,
-                    'is_completed' => $goal->is_completed,
-                    'is_reached' => $goal->is_reached,
-                    'completed_at' => $goal->completed_at?->format('M d, Y'),
-                    'created_at' => $goal->created_at->format('M d, Y'),
-                ];
-            });
+        // Format savings goals for frontend
+        $formattedGoals = $savingsGoals->map(function ($goal) {
+            $progressPercentage = $goal->getProgressPercentage();
 
-        $stats = [
-            'total_goals' => $savingsGoals->count(),
-            'active_goals' => $savingsGoals->where('is_completed', false)->count(),
-            'completed_goals' => $savingsGoals->where('is_completed', true)->count(),
-            'total_saved' => $user->total_saved,
-            'total_target' => $user->total_target,
-            'overall_progress' => $user->total_target > 0
-                ? min(($user->total_saved / $user->total_target) * 100, 100)
-                : 0,
-        ];
+            return [
+                'id' => $goal->id,
+                'name' => $goal->name,
+                'description' => $goal->description,
+                'target_amount' => $goal->target_amount,
+                'current_amount' => $goal->current_amount,
+                'remaining_amount' => $goal->getRemainingAmount(),
+                'progress_percentage' => $progressPercentage,
+                'plant_emoji' => $this->plantGrowthService->getPlantEmoji($progressPercentage),
+                'growth_stage' => $this->plantGrowthService->getGrowthStage($progressPercentage),
+                'is_completed' => $goal->is_completed,
+                'is_reached' => $goal->current_amount >= $goal->target_amount,
+                'completed_at' => null, // Would need to add this to DTO if needed
+                'created_at' => $goal->created_at,
+            ];
+        });
 
-        // Get water bank data
-        $waterBank = WaterBank::getOrCreateForUser($user->id);
-        $waterBankData = [
-            'balance' => $waterBank->balance,
-            'formatted_balance' => $waterBank->formatted_balance,
-            'recent_transactions' => $waterBank->transactions()
-                ->with('savingsGoal')
-                ->orderBy('created_at', 'desc')
-                ->limit(5)
-                ->get()
-                ->map(function ($transaction) {
-                    return [
-                        'id' => $transaction->id,
-                        'type' => $transaction->type,
-                        'amount' => $transaction->amount,
-                        'formatted_amount' => $transaction->formatted_amount,
-                        'icon' => $transaction->icon,
-                        'description' => $transaction->display_description,
-                        'date' => $transaction->created_at->format('M j, Y'),
-                        'date_short' => $transaction->created_at->format('M j'),
-                    ];
-                }),
-        ];
+        if ($request->expectsJson()) {
+            return response()->json([
+                'data' => [
+                    'savings_goals' => SavingsGoalResource::collection($savingsGoals),
+                    'stats' => $stats,
+                    'water_bank' => $waterBankData
+                ]
+            ]);
+        }
 
         return Inertia::render('Garden/MyGarden', [
-            'savingsGoals' => $savingsGoals,
+            'savingsGoals' => $formattedGoals,
             'stats' => $stats,
             'waterBank' => $waterBankData,
         ]);
@@ -85,144 +76,271 @@ class SavingsGoalController extends Controller
     /**
      * Store a newly created savings goal.
      */
-    public function store(Request $request): RedirectResponse
+    public function store(StoreSavingsGoalRequest $request): RedirectResponse|JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string|max:500',
-            'target_amount' => 'required|numeric|min:0.01|max:9999999.99',
-        ]);
+        try {
+            $user = auth()->user();
+            $goal = $this->savingsGoalService->createSavingsGoal($user, $request);
 
-        auth()->user()->savingsGoals()->create($validated);
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Your new savings goal has been planted! 🌱',
+                    'data' => new SavingsGoalResource($goal)
+                ], 201);
+            }
 
-        return redirect()->route('garden.index')->with('success', 'Your new savings goal has been planted! 🌱');
+            return redirect()->route('garden.index')
+                ->with('success', 'Your new savings goal has been planted! 🌱');
+
+        } catch (\Exception $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Failed to create savings goal.',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+
+            return back()->withErrors(['error' => 'Failed to create savings goal: ' . $e->getMessage()]);
+        }
     }
 
     /**
      * Update the specified savings goal.
      */
-    public function update(Request $request, SavingsGoal $savingsGoal): RedirectResponse
+    public function update(UpdateSavingsGoalRequest $request, int $goalId): RedirectResponse|JsonResponse
     {
-        // Ensure the goal belongs to the authenticated user
-        if ($savingsGoal->user_id !== auth()->id()) {
-            abort(403);
+        try {
+            $user = auth()->user();
+            $goal = $this->savingsGoalService->updateSavingsGoal($user, $goalId, $request);
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Your savings goal has been updated! 🌿',
+                    'data' => new SavingsGoalResource($goal)
+                ]);
+            }
+
+            return redirect()->route('garden.index')
+                ->with('success', 'Your savings goal has been updated! 🌿');
+
+        } catch (SavingsGoalNotFoundException $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => $e->getMessage()
+                ], 404);
+            }
+
+            return redirect()->route('garden.index')
+                ->withErrors(['error' => $e->getMessage()]);
+
+        } catch (\Exception $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Failed to update savings goal.',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+
+            return back()->withErrors(['error' => 'Failed to update savings goal: ' . $e->getMessage()]);
         }
-
-        $validated = $request->validate([
-            'name' => 'sometimes|required|string|max:255',
-            'description' => 'sometimes|nullable|string|max:500',
-            'target_amount' => 'sometimes|required|numeric|min:0.01|max:9999999.99',
-        ]);
-
-        $savingsGoal->update($validated);
-
-        return redirect()->route('garden.index')->with('success', 'Your savings goal has been updated! 🌿');
     }
 
     /**
      * Add money to a savings goal.
      */
-    public function addSavings(Request $request, SavingsGoal $savingsGoal): RedirectResponse
+    public function addSavings(AddSavingsRequest $request, int $goalId): RedirectResponse|JsonResponse
     {
-        // Ensure the goal belongs to the authenticated user
-        if ($savingsGoal->user_id !== auth()->id()) {
-            abort(403);
-        }
+        try {
+            $user = auth()->user();
+            $result = $this->savingsGoalService->addSavings($user, $goalId, $request);
 
-        $validated = $request->validate([
-            'amount' => 'required|numeric|min:0.01|max:9999999.99',
-            'source' => 'required|in:water_bank,other',
-        ]);
-
-        $user = auth()->user();
-        $amount = $validated['amount'];
-        $source = $validated['source'];
-
-        if ($source === 'water_bank') {
-            $waterBank = WaterBank::getOrCreateForUser($user->id);
-
-            if (!$waterBank->hasEnoughWater($amount)) {
-                return back()->with('error', 'Not enough water in your Water Bank! 💧');
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => $result['message'],
+                    'data' => new SavingsGoalResource($result['goal'])
+                ]);
             }
 
-            // Use water from bank and add to goal
-            $waterBank->useWater($amount, $savingsGoal->id);
-            $savingsGoal->addSavings($amount);
+            return redirect()->route('garden.index')
+                ->with('success', $result['message']);
 
-            $message = "Watered {$savingsGoal->name} with " . number_format($amount, 2) . " from your Water Bank! 🌱💧";
-        } else {
-            // Other money (gifts, cash, etc.)
-            $savingsGoal->addSavings($amount);
-            $message = "Added " . number_format($amount, 2) . " to {$savingsGoal->name}! 💰";
+        } catch (SavingsGoalNotFoundException $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => $e->getMessage()
+                ], 404);
+            }
+
+            return redirect()->route('garden.index')
+                ->withErrors(['error' => $e->getMessage()]);
+
+        } catch (\InvalidArgumentException $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => $e->getMessage()
+                ], 400);
+            }
+
+            return back()->with('error', $e->getMessage());
+
+        } catch (\Exception $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Failed to add savings.',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+
+            return back()->withErrors(['error' => 'Failed to add savings: ' . $e->getMessage()]);
         }
-
-        return redirect()->route('garden.index')->with('success', $message);
     }
 
     /**
      * Mark a savings goal as completed.
      */
-    public function complete(SavingsGoal $savingsGoal): RedirectResponse
+    public function complete(Request $request, int $goalId): RedirectResponse|JsonResponse
     {
-        // Ensure the goal belongs to the authenticated user
-        if ($savingsGoal->user_id !== auth()->id()) {
-            abort(403);
+        try {
+            $user = auth()->user();
+            $goal = $this->savingsGoalService->completeSavingsGoal($user, $goalId);
+
+            $message = "Congratulations! You've completed your {$goal->name} goal! 🌳🎉";
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => $message,
+                    'data' => new SavingsGoalResource($goal)
+                ]);
+            }
+
+            return redirect()->route('garden.index')
+                ->with('success', $message);
+
+        } catch (SavingsGoalNotFoundException $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => $e->getMessage()
+                ], 404);
+            }
+
+            return redirect()->route('garden.index')
+                ->withErrors(['error' => $e->getMessage()]);
+
+        } catch (\InvalidArgumentException $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => $e->getMessage()
+                ], 400);
+            }
+
+            return redirect()->route('garden.index')
+                ->with('info', $e->getMessage());
+
+        } catch (\Exception $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Failed to complete savings goal.',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+
+            return back()->withErrors(['error' => 'Failed to complete savings goal: ' . $e->getMessage()]);
         }
-
-        if ($savingsGoal->is_completed) {
-            return redirect()->route('garden.index')->with('info', 'This goal is already completed! 🎉');
-        }
-
-        $savingsGoal->markAsCompleted();
-
-        return redirect()->route('garden.index')->with('success', "Congratulations! You've completed your {$savingsGoal->name} goal! 🌳🎉");
     }
 
     /**
      * Remove the specified savings goal.
      */
-    public function destroy(SavingsGoal $savingsGoal): RedirectResponse
+    public function destroy(Request $request, int $goalId): RedirectResponse|JsonResponse
     {
-        // Ensure the goal belongs to the authenticated user
-        if ($savingsGoal->user_id !== auth()->id()) {
-            abort(403);
+        try {
+            $user = auth()->user();
+            $result = $this->savingsGoalService->deleteSavingsGoal($user, $goalId);
+
+            $message = "Your {$result['name']} goal has been removed from your garden.";
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => $message,
+                    'data' => $result
+                ]);
+            }
+
+            return redirect()->route('garden.index')
+                ->with('success', $message);
+
+        } catch (SavingsGoalNotFoundException $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => $e->getMessage()
+                ], 404);
+            }
+
+            return redirect()->route('garden.index')
+                ->withErrors(['error' => $e->getMessage()]);
+
+        } catch (\Exception $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Failed to delete savings goal.',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+
+            return back()->withErrors(['error' => 'Failed to delete savings goal: ' . $e->getMessage()]);
         }
-
-        $goalName = $savingsGoal->name;
-        $savingsGoal->delete();
-
-        return redirect()->route('garden.index')->with('success', "Your {$goalName} goal has been removed from your garden.");
     }
 
     /**
      * Withdraw money from a savings goal.
      */
-    public function withdraw(Request $request, SavingsGoal $savingsGoal): RedirectResponse
+    public function withdraw(WithdrawSavingsRequest $request, int $goalId): RedirectResponse|JsonResponse
     {
-        // Ensure the goal belongs to the authenticated user
-        if ($savingsGoal->user_id !== auth()->id()) {
-            abort(403);
+        try {
+            $user = auth()->user();
+            $goal = $this->savingsGoalService->withdrawSavings($user, $goalId, $request);
+
+            $withdrawAmount = $request->validated()['amount'];
+            $message = "Withdrew $" . number_format($withdrawAmount, 2) . " from your {$goal->name} goal.";
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => $message,
+                    'data' => new SavingsGoalResource($goal)
+                ]);
+            }
+
+            return redirect()->route('garden.index')
+                ->with('success', $message);
+
+        } catch (SavingsGoalNotFoundException $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => $e->getMessage()
+                ], 404);
+            }
+
+            return redirect()->route('garden.index')
+                ->withErrors(['error' => $e->getMessage()]);
+
+        } catch (\InvalidArgumentException $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => $e->getMessage()
+                ], 400);
+            }
+
+            return back()->withErrors(['amount' => $e->getMessage()]);
+
+        } catch (\Exception $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Failed to withdraw from savings goal.',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+
+            return back()->withErrors(['error' => 'Failed to withdraw: ' . $e->getMessage()]);
         }
-
-        $validated = $request->validate([
-            'amount' => 'required|numeric|min:0.01',
-        ]);
-
-        $withdrawAmount = $validated['amount'];
-
-        if ($withdrawAmount > $savingsGoal->current_amount) {
-            throw ValidationException::withMessages([
-                'amount' => 'Cannot withdraw more than the current saved amount.',
-            ]);
-        }
-
-        $newAmount = $savingsGoal->current_amount - $withdrawAmount;
-
-        $savingsGoal->update([
-            'current_amount' => $newAmount,
-            'is_completed' => false, // Unmark as completed if it was
-        ]);
-
-        return redirect()->route('garden.index')->with('success', "Withdrew $" . number_format($withdrawAmount, 2) . " from your {$savingsGoal->name} goal.");
     }
 }

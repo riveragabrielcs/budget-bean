@@ -9,6 +9,14 @@ use Illuminate\Support\Collection;
 interface SavingsGoalRepositoryInterface
 {
     /**
+     * Retrieve all savings goals for a user (both active and completed).
+     *
+     * @param User|null $user
+     * @return Collection<SavingsGoalDTO>
+     */
+    public function getAllSavingsGoals(?User $user): Collection;
+
+    /**
      * Retrieve active savings goals for a user.
      *
      * @param User|null $user
