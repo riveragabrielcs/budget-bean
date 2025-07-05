@@ -3,7 +3,11 @@
 use App\Http\Controllers\WaterBankController;
 use Illuminate\Support\Facades\Route;
 
+// -----------------------------------
 // Water Bank feature routes
+// -----------------------------------
+
+// Auth / Account Required
 Route::middleware('auth')->prefix('water-bank')->name('water-bank.')->group(function () {
     Route::post('/end-month', [WaterBankController::class, 'endMonth'])->name('end-month');
     Route::post('/water-goal/{savingsGoal}', [WaterBankController::class, 'waterGoal'])->name('water-goal');

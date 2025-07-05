@@ -4,6 +4,11 @@ import NavLink from '@/Components/NavLink.vue';
 import {Head, useForm, router, usePage} from '@inertiajs/vue3';
 import {computed, ref, watch} from 'vue';
 import {useExpenseTypes} from '@/composables/useExpenseTypes';
+import { useAuthGuard } from '@/composables/useAuthGuard'
+import AuthRequiredModal from '@/Components/AuthRequiredModal.vue'
+
+
+const { requireAuth, showAuthModal, closeAuthModal } = useAuthGuard()
 
 const props = defineProps({
     savingsGoals: Array,
@@ -69,6 +74,22 @@ const budgetStatus = computed(() => {
     if (remaining < 0) return 'negative';
     if (remaining < 200) return 'warning';
     return 'positive';
+});
+
+const welcomeMessage = computed(() => {
+    const user = usePage().props.auth?.user;
+
+    if (user) {
+        return {
+            title: "Welcome back! 🌱",
+            subtitle: "Ready to grow your savings like a healthy garden?"
+        };
+    } else {
+        return {
+            title: "Welcome to BudgetBean! 🌱",
+            subtitle: "Feel free to test out the app and see how it works. Create an account to save your financial garden's progress!"
+        };
+    }
 });
 
 // End month modal state
@@ -287,10 +308,10 @@ const getMonthName = (monthNumber) => {
                         <div class="flex items-center relative">
                             <div class="flex-1">
                                 <h3 class="text-xl font-semibold text-emerald-800">
-                                    Welcome back! 🌱
+                                    {{ welcomeMessage.title }}
                                 </h3>
                                 <p class="text-stone-600 mt-2 text-lg">
-                                    Ready to grow your savings like a healthy garden?
+                                    {{ welcomeMessage.subtitle }}
                                 </p>
                             </div>
                             <div class="hidden sm:block">
@@ -604,7 +625,7 @@ const getMonthName = (monthNumber) => {
                                 </div>
                                 <div class="flex justify-center">
                                     <button
-                                        @click="openEndMonthModal"
+                                        @click="requireAuth(openEndMonthModal)"
                                         class="bg-cyan-500 hover:bg-cyan-600 text-white font-medium px-4 py-2 rounded-lg transition duration-200 flex items-center"
                                     >
                                         <span class="mr-2">🏁</span>
@@ -1164,4 +1185,5 @@ const getMonthName = (monthNumber) => {
             </div>
         </div>
     </div>
+    <AuthRequiredModal :show="showAuthModal" @close="closeAuthModal" />
 </template>
