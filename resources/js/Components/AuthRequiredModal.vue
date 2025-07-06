@@ -22,7 +22,7 @@ defineEmits(['close'])
                         />
                     </div>
                     <h3 class="text-xl font-semibold text-emerald-800 mb-2">
-                        Oops! Account Required 🌾
+                        Sorry! Account Required 🌾
                     </h3>
                     <p class="text-stone-600 mb-6">
                         To grow your financial garden and track your progress over time, you'll need to plant yourself an account first!
