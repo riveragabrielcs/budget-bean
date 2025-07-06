@@ -6,20 +6,23 @@ use App\Data\AddSavingsData;
 use App\Data\SavingsGoalData;
 use App\DTOs\SavingsGoalDTO;
 use App\Enums\FundingSource;
+use App\Enums\WaterBankSource;
+use App\Exceptions\InsufficientWaterException;
 use App\Exceptions\SavingsGoalNotFoundException;
 use App\Http\Requests\SavingsGoal\AddSavingsRequest;
 use App\Http\Requests\SavingsGoal\StoreSavingsGoalRequest;
 use App\Http\Requests\SavingsGoal\UpdateSavingsGoalRequest;
 use App\Http\Requests\SavingsGoal\WithdrawSavingsRequest;
 use App\Models\User;
-use App\Models\WaterBank;
 use App\Repositories\SavingsGoal\SavingsGoalRepositoryInterface;
+use App\Repositories\WaterBank\WaterBankRepositoryInterface;
 use Illuminate\Support\Collection;
 
 class SavingsGoalService
 {
     public function __construct(
-        private SavingsGoalRepositoryInterface $savingsGoalRepo
+        private SavingsGoalRepositoryInterface $savingsGoalRepo,
+        private WaterBankRepositoryInterface $waterBankRepo
     ) {}
 
     /**
@@ -242,28 +245,24 @@ class SavingsGoalService
             ];
         }
 
-        $waterBank = WaterBank::getOrCreateForUser($user->id);
+        $waterBank = $this->waterBankRepo->getOrCreateForUser($user);
+        $recentTransactions = $this->waterBankRepo->getRecentTransactions($user, 5);
 
         return [
             'balance' => $waterBank->balance,
-            'formatted_balance' => $waterBank->formatted_balance,
-            'recent_transactions' => $waterBank->transactions()
-                ->with('savingsGoal')
-                ->orderBy('created_at', 'desc')
-                ->limit(5)
-                ->get()
-                ->map(function ($transaction) {
-                    return [
-                        'id' => $transaction->id,
-                        'type' => $transaction->type,
-                        'amount' => $transaction->amount,
-                        'formatted_amount' => $transaction->formatted_amount,
-                        'icon' => $transaction->icon,
-                        'description' => $transaction->display_description,
-                        'date' => $transaction->created_at->format('M j, Y'),
-                        'date_short' => $transaction->created_at->format('M j'),
-                    ];
-                }),
+            'formatted_balance' => $waterBank->getFormattedBalance(),
+            'recent_transactions' => $recentTransactions->map(function ($transaction) {
+                return [
+                    'id' => $transaction->id,
+                    'type' => $transaction->type->value,
+                    'amount' => $transaction->amount,
+                    'formatted_amount' => $transaction->getFormattedAmount(),
+                    'icon' => $transaction->getIcon(),
+                    'description' => $transaction->getDisplayDescription(),
+                    'date' => $transaction->getFormattedDate(),
+                    'date_short' => date('M j', strtotime($transaction->created_at)),
+                ];
+            }),
         ];
     }
 
@@ -276,14 +275,11 @@ class SavingsGoalService
             throw new \InvalidArgumentException('Water bank is only available for authenticated users');
         }
 
-        $waterBank = WaterBank::getOrCreateForUser($user->id);
-
-        if (!$waterBank->hasEnoughWater($data->amount)) {
-            throw new \InvalidArgumentException('Not enough water in your Water Bank! 💧');
+        if (!$this->waterBankRepo->hasEnoughWater($user, $data->amount)) {
+            throw new InsufficientWaterException();
         }
 
-        // Use water from bank and add to goal
-        $waterBank->useWater($data->amount, $goalId);
+        $this->waterBankRepo->useWater($user, $data->amount, $goalId, WaterBankSource::PLANT_WATERING);
         $updatedGoal = $this->savingsGoalRepo->addSavings($user, $goalId, $data->amount);
 
         return [

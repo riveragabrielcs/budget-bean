@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\WaterBankSource;
+use App\Enums\WaterBankTransactionType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -32,6 +34,8 @@ class WaterBankTransaction extends Model
     protected function casts(): array
     {
         return [
+            'type' => WaterBankTransactionType::class,
+            'source' => WaterBankSource::class,
             'amount' => 'decimal:2',
             'balance_after' => 'decimal:2',
         ];
@@ -58,7 +62,7 @@ class WaterBankTransaction extends Model
      */
     public function getFormattedAmountAttribute(): string
     {
-        $prefix = $this->type === 'deposit' ? '+' : '-';
+        $prefix = $this->type->amountPrefix();
         return $prefix . '$' . number_format($this->amount, 2);
     }
 
@@ -67,20 +71,7 @@ class WaterBankTransaction extends Model
      */
     public function getIconAttribute(): string
     {
-        if ($this->type === 'deposit') {
-            return match($this->source) {
-                'month_end' => '📅',
-                'manual_add' => '➕',
-                'rollover' => '🔄',
-                default => '💧'
-            };
-        }
-
-        return match($this->source) {
-            'plant_watering' => '🌱',
-            'manual_withdrawal' => '➖',
-            default => '💸'
-        };
+        return $this->source->icon();
     }
 
     /**
@@ -92,19 +83,10 @@ class WaterBankTransaction extends Model
             return $this->description;
         }
 
-        if ($this->type === 'deposit') {
-            return match($this->source) {
-                'month_end' => 'Month-end water deposit',
-                'manual_add' => 'Manual water addition',
-                'rollover' => 'Water carried from previous month',
-                default => 'Water deposit'
-            };
-        }
-
-        if ($this->type === 'withdrawal' && $this->savingsGoal) {
+        if ($this->type === WaterBankTransactionType::WITHDRAWAL && $this->savingsGoal) {
             return "Watered {$this->savingsGoal->name}";
         }
 
-        return 'Water withdrawal';
+        return $this->source->label();
     }
 }

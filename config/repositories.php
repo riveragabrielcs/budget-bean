@@ -17,6 +17,10 @@ return [
             'authenticated' => \App\Repositories\Revenue\DBRevenueRepository::class,
             'guest' => \App\Repositories\Revenue\SessionRevenueRepository::class,
         ],
+        \App\Repositories\WaterBank\WaterBankRepositoryInterface::class => [
+            'authenticated' => \App\Repositories\WaterBank\DBWaterBankRepository::class,
+            'guest' => \App\Repositories\WaterBank\SessionWaterBankRepository::class,
+        ],
         // BudgetBean future repositories...
     ],
 

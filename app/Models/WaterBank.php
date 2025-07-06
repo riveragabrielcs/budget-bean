@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\WaterBankSource;
+use App\Enums\WaterBankTransactionType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -50,42 +52,6 @@ class WaterBank extends Model
     }
 
     /**
-     * Add water to the bank.
-     */
-    public function addWater(float $amount, string $source = 'month_end', ?string $description = null): WaterBankTransaction
-    {
-        $this->increment('balance', $amount);
-
-        return $this->transactions()->create([
-            'type' => 'deposit',
-            'amount' => $amount,
-            'source' => $source,
-            'description' => $description,
-            'balance_after' => $this->fresh()->balance,
-        ]);
-    }
-
-    /**
-     * Use water from the bank.
-     */
-    public function useWater(float $amount, int $savingsGoalId, string $source = 'plant_watering'): WaterBankTransaction
-    {
-        if ($amount > $this->balance) {
-            throw new \Exception('Insufficient water in bank');
-        }
-
-        $this->decrement('balance', $amount);
-
-        return $this->transactions()->create([
-            'type' => 'withdrawal',
-            'amount' => $amount,
-            'source' => $source,
-            'savings_goal_id' => $savingsGoalId,
-            'balance_after' => $this->fresh()->balance,
-        ]);
-    }
-
-    /**
      * Get or create water bank for user.
      */
     public static function getOrCreateForUser($userId): self
@@ -109,6 +75,6 @@ class WaterBank extends Model
      */
     public function getFormattedBalanceAttribute(): string
     {
-        return number_format($this->balance, 2);
+        return '$' . number_format($this->balance, 2);
     }
 }
