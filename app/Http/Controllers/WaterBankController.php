@@ -44,9 +44,7 @@ class WaterBankController extends Controller
             return redirect()->route('past-months.index')
                 ->with('success', $result['message']);
 
-        } catch (\InvalidArgumentException $e) {
-            return back()->with('error', $e->getMessage());
-        } catch (\Exception $e) {
+        } catch (\InvalidArgumentException|\Exception $e) {
             return back()->with('error', $e->getMessage());
         }
     }

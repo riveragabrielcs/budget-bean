@@ -41,6 +41,25 @@ class HandleInertiaRequests extends Middleware
                     'ONE_TIME' => ExpenseType::ONE_TIME->value,
                 ],
             ],
+            // Timestamps ensure uniqueness of flash messages which then allows repeated messages
+            'flash' => [
+                'success' => $request->session()->get('success') ? [
+                    'message' => $request->session()->get('success'),
+                    'timestamp' => now()->timestamp
+                ] : null,
+                'error' => $request->session()->get('error') ? [
+                    'message' => $request->session()->get('error'),
+                    'timestamp' => now()->timestamp
+                ] : null,
+                'info' => $request->session()->get('info') ? [
+                    'message' => $request->session()->get('info'),
+                    'timestamp' => now()->timestamp
+                ] : null,
+                'warning' => $request->session()->get('warning') ? [
+                    'message' => $request->session()->get('warning'),
+                    'timestamp' => now()->timestamp
+                ] : null,
+            ],
         ];
     }
 }

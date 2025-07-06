@@ -5,6 +5,7 @@ import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 import NavLink from '@/Components/NavLink.vue';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
+import FlashMessage from '@/Components/FlashMessage.vue';
 import {Link} from '@inertiajs/vue3';
 import {useAuthGuard} from '@/composables/useAuthGuard'
 import AuthRequiredModal from '@/Components/AuthRequiredModal.vue'
@@ -367,6 +368,14 @@ const showingNavigationDropdown = ref(false);
                     <slot name="header"/>
                 </div>
             </header>
+
+            <!-- Flash Messages -->
+            <FlashMessage
+                :success="$page.props.flash?.success"
+                :error="$page.props.flash?.error"
+                :info="$page.props.flash?.info"
+                :warning="$page.props.flash?.warning"
+            />
 
             <!-- Page Content -->
             <main>
