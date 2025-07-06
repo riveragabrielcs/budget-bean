@@ -2,7 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Enums\ExpenseType;
+use App\Enums\ExpenseTypeEnum;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -37,8 +37,8 @@ class HandleInertiaRequests extends Middleware
             ],
             'constants' => [
                 'expenseTypes' => [
-                    'RECURRING' => ExpenseType::RECURRING->value,
-                    'ONE_TIME' => ExpenseType::ONE_TIME->value,
+                    'RECURRING' => ExpenseTypeEnum::RECURRING->value,
+                    'ONE_TIME' => ExpenseTypeEnum::ONE_TIME->value,
                 ],
             ],
             // Timestamps ensure uniqueness of flash messages which then allows repeated messages

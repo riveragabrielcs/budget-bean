@@ -4,8 +4,8 @@ namespace App\Repositories\WaterBank;
 
 use App\DTOs\WaterBankDTO;
 use App\DTOs\WaterBankTransactionDTO;
-use App\Enums\WaterBankSource;
-use App\Enums\WaterBankTransactionType;
+use App\Enums\WaterBankSourceEnum;
+use App\Enums\WaterBankTransactionTypeEnum;
 use App\Exceptions\InsufficientWaterException;
 use App\Models\User;
 use App\Models\WaterBank;
@@ -47,7 +47,7 @@ class DBWaterBankRepository implements WaterBankRepositoryInterface
     /**
      * Add water to the bank.
      */
-    public function addWater(?User $user, float $amount, WaterBankSource $source, ?string $description = null): WaterBankTransactionDTO
+    public function addWater(?User $user, float $amount, WaterBankSourceEnum $source, ?string $description = null): WaterBankTransactionDTO
     {
         if (!$user) {
             throw new \InvalidArgumentException('User is required for database operations');
@@ -57,7 +57,7 @@ class DBWaterBankRepository implements WaterBankRepositoryInterface
         $waterBank->increment('balance', $amount);
 
         $transaction = $waterBank->transactions()->create([
-            'type' => WaterBankTransactionType::DEPOSIT->value,
+            'type' => WaterBankTransactionTypeEnum::DEPOSIT->value,
             'amount' => $amount,
             'source' => $source->value,
             'description' => $description,
@@ -70,7 +70,7 @@ class DBWaterBankRepository implements WaterBankRepositoryInterface
     /**
      * Use water from the bank.
      */
-    public function useWater(?User $user, float $amount, int $savingsGoalId, WaterBankSource $source = WaterBankSource::PLANT_WATERING): WaterBankTransactionDTO
+    public function useWater(?User $user, float $amount, int $savingsGoalId, WaterBankSourceEnum $source = WaterBankSourceEnum::PLANT_WATERING): WaterBankTransactionDTO
     {
         if (!$user) {
             throw new \InvalidArgumentException('User is required for database operations');
@@ -85,7 +85,7 @@ class DBWaterBankRepository implements WaterBankRepositoryInterface
         $waterBank->decrement('balance', $amount);
 
         $transaction = $waterBank->transactions()->create([
-            'type' => WaterBankTransactionType::WITHDRAWAL->value,
+            'type' => WaterBankTransactionTypeEnum::WITHDRAWAL->value,
             'amount' => $amount,
             'source' => $source->value,
             'savings_goal_id' => $savingsGoalId,

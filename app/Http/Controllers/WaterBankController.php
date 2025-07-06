@@ -6,7 +6,7 @@ use App\Data\AddManualWaterData;
 use App\Data\EndMonthData;
 use App\Data\WaterAllGoalsData;
 use App\Data\WaterGoalData;
-use App\Enums\FundingSource;
+use App\Enums\FundingSourceEnum;
 use App\Exceptions\InsufficientWaterException;
 use App\Exceptions\SavingsGoalNotFoundException;
 use App\Http\Requests\WaterBank\AddManualWaterRequest;
@@ -88,7 +88,7 @@ class WaterBankController extends Controller
             $user = auth()->user();
             $data = new WaterAllGoalsData(
                 total_amount: $request->validated('total_amount'),
-                source: FundingSource::from($request->validated('source'))
+                source: FundingSourceEnum::from($request->validated('source'))
             );
 
             $result = $this->waterBankService->waterAllGoals($user, $data);

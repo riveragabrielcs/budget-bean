@@ -2,7 +2,7 @@
 
 namespace App\Data;
 
-use App\Enums\ExpenseType;
+use App\Enums\ExpenseTypeEnum;
 
 final readonly class BillData
 {

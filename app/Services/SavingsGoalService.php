@@ -5,8 +5,8 @@ namespace App\Services;
 use App\Data\AddSavingsData;
 use App\Data\SavingsGoalData;
 use App\DTOs\SavingsGoalDTO;
-use App\Enums\FundingSource;
-use App\Enums\WaterBankSource;
+use App\Enums\FundingSourceEnum;
+use App\Enums\WaterBankSourceEnum;
 use App\Exceptions\InsufficientWaterException;
 use App\Exceptions\SavingsGoalNotFoundException;
 use App\Http\Requests\SavingsGoal\AddSavingsRequest;
@@ -120,10 +120,10 @@ class SavingsGoalService
 
         $addSavingsData = new AddSavingsData(
             amount: $validated['amount'],
-            source: FundingSource::from($validated['source'])
+            source: FundingSourceEnum::from($validated['source'])
         );
 
-        if ($addSavingsData->source === FundingSource::WATER_BANK) {
+        if ($addSavingsData->source === FundingSourceEnum::WATER_BANK) {
             return $this->addSavingsFromWaterBank($user, $goalId, $addSavingsData, $goal->name);
         } else {
             return $this->addSavingsFromOther($user, $goalId, $addSavingsData, $goal->name);
@@ -279,7 +279,7 @@ class SavingsGoalService
             throw new InsufficientWaterException();
         }
 
-        $this->waterBankRepo->useWater($user, $data->amount, $goalId, WaterBankSource::PLANT_WATERING);
+        $this->waterBankRepo->useWater($user, $data->amount, $goalId, WaterBankSourceEnum::PLANT_WATERING);
         $updatedGoal = $this->savingsGoalRepo->addSavings($user, $goalId, $data->amount);
 
         return [

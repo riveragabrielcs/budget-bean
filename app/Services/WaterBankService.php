@@ -9,8 +9,8 @@ use App\Data\WaterGoalData;
 use App\DTOs\SavingsGoalDTO;
 use App\DTOs\WaterBankDTO;
 use App\DTOs\WaterBankTransactionDTO;
-use App\Enums\FundingSource;
-use App\Enums\WaterBankSource;
+use App\Enums\FundingSourceEnum;
+use App\Enums\WaterBankSourceEnum;
 use App\Exceptions\InsufficientWaterException;
 use App\Exceptions\SavingsGoalNotFoundException;
 use App\Models\CompletedMonth;
@@ -55,7 +55,7 @@ class WaterBankService
             $transaction = $this->waterBankRepository->addWater(
                 $user,
                 $waterToAdd,
-                WaterBankSource::MONTH_END,
+                WaterBankSourceEnum::MONTH_END,
                 $description
             );
         }
@@ -87,7 +87,7 @@ class WaterBankService
         }
 
         $transaction = null;
-        if ($data->source === FundingSource::WATER_BANK) {
+        if ($data->source === FundingSourceEnum::WATER_BANK) {
             if (!$this->waterBankRepository->hasEnoughWater($user, $data->amount)) {
                 throw new InsufficientWaterException();
             }
@@ -98,7 +98,7 @@ class WaterBankService
         // Add savings to the goal
         $updatedGoal = $this->savingsGoalRepository->addSavings($user, $goalId, $data->amount);
 
-        $sourceText = $data->source === FundingSource::WATER_BANK ? 'Water Bank' : 'other funds';
+        $sourceText = $data->source === FundingSourceEnum::WATER_BANK ? 'Water Bank' : 'other funds';
         $message = "Watered {$goal->name} with " . number_format($data->amount, 2) . " from {$sourceText}! 🌱💧";
 
         return [
@@ -119,7 +119,7 @@ class WaterBankService
             throw new \InvalidArgumentException('No active goals to water! Plant some goals first. 🌱');
         }
 
-        if ($data->source === FundingSource::WATER_BANK) {
+        if ($data->source === FundingSourceEnum::WATER_BANK) {
             if (!$this->waterBankRepository->hasEnoughWater($user, $data->total_amount)) {
                 throw new InsufficientWaterException();
             }
@@ -131,7 +131,7 @@ class WaterBankService
         $transactions = [];
 
         foreach ($activeGoals as $goal) {
-            if ($data->source === FundingSource::WATER_BANK) {
+            if ($data->source === FundingSourceEnum::WATER_BANK) {
                 $transactions[] = $this->waterBankRepository->useWater($user, $amountPerGoal, $goal->id);
             }
 
@@ -139,7 +139,7 @@ class WaterBankService
             $wateredGoals[] = $goal->name;
         }
 
-        $sourceText = $data->source === FundingSource::WATER_BANK ? 'Water Bank' : 'other funds';
+        $sourceText = $data->source === FundingSourceEnum::WATER_BANK ? 'Water Bank' : 'other funds';
         $message = "Watered " . count($wateredGoals) . " goals equally with " . number_format($data->total_amount, 2) . " from {$sourceText}! 🌻💧";
 
         return [
@@ -160,7 +160,7 @@ class WaterBankService
         $transaction = $this->waterBankRepository->addWater(
             $user,
             $data->amount,
-            WaterBankSource::MANUAL_ADD,
+            WaterBankSourceEnum::MANUAL_ADD,
             $description
         );
 

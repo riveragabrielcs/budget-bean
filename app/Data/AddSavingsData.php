@@ -2,13 +2,13 @@
 
 namespace App\Data;
 
-use App\Enums\FundingSource;
+use App\Enums\FundingSourceEnum;
 
 final readonly class AddSavingsData
 {
     public function __construct(
-        public float         $amount,
-        public FundingSource $source,
+        public float             $amount,
+        public FundingSourceEnum $source,
     ) {
     }
 }

@@ -2,22 +2,22 @@
 
 namespace App\DTOs;
 
-use App\Enums\WaterBankSource;
-use App\Enums\WaterBankTransactionType;
+use App\Enums\WaterBankSourceEnum;
+use App\Enums\WaterBankTransactionTypeEnum;
 
 final readonly class WaterBankTransactionDTO
 {
     public function __construct(
-        public int $id,
-        public int $water_bank_id,
-        public WaterBankTransactionType $type,
-        public float $amount,
-        public WaterBankSource $source,
-        public ?string $description,
-        public ?int $savings_goal_id,
-        public float $balance_after,
-        public string $created_at,
-        public ?string $savings_goal_name = null
+        public int                          $id,
+        public int                          $water_bank_id,
+        public WaterBankTransactionTypeEnum $type,
+        public float                        $amount,
+        public WaterBankSourceEnum          $source,
+        public ?string                      $description,
+        public ?int                         $savings_goal_id,
+        public float                        $balance_after,
+        public string                       $created_at,
+        public ?string                      $savings_goal_name = null
     ) {}
 
     /**
@@ -46,7 +46,7 @@ final readonly class WaterBankTransactionDTO
             return $this->description;
         }
 
-        if ($this->type === WaterBankTransactionType::WITHDRAWAL && $this->savings_goal_name) {
+        if ($this->type === WaterBankTransactionTypeEnum::WITHDRAWAL && $this->savings_goal_name) {
             return "Watered {$this->savings_goal_name}";
         }
 

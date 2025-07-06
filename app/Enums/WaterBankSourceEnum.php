@@ -2,7 +2,7 @@
 
 namespace App\Enums;
 
-enum WaterBankSource: string
+enum WaterBankSourceEnum: string
 {
     case MONTH_END = 'month_end';
     case MANUAL_ADD = 'manual_add';

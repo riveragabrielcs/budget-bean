@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\DTOs\BillDTO;
 use App\DTOs\DashboardDTO;
-use App\Enums\ExpenseType;
+use App\Enums\ExpenseTypeEnum;
 use App\Models\User;
 use App\Repositories\Bill\BillRepositoryInterface;
 use App\Repositories\Expense\ExpenseRepositoryInterface;
@@ -87,7 +87,7 @@ class DashboardService
                     'expense_date' => $expense->expense_date,
                     'formatted_expense_date' => $expense->formatted_expense_date,
                     'description' => $expense->description,
-                    'type' => ExpenseType::ONE_TIME->value,
+                    'type' => ExpenseTypeEnum::ONE_TIME->value,
                     'created_at' => $expense->created_at,
                 ];
             })
@@ -112,7 +112,7 @@ class DashboardService
                 'bill_date' => $bill->date,
                 'formatted_bill_date' => $bill->date,
                 'description' => $bill->description,
-                'type' => ExpenseType::RECURRING->value,
+                'type' => ExpenseTypeEnum::RECURRING->value,
                 'created_at' => $bill->created_at,
             ];
         })->toArray();

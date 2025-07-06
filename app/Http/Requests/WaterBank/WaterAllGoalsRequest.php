@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\WaterBank;
 
-use App\Enums\FundingSource;
+use App\Enums\FundingSourceEnum;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -25,7 +25,7 @@ class WaterAllGoalsRequest extends FormRequest
     {
         return [
             'total_amount' => 'required|numeric|min:0.01|max:9999999.99',
-            'source' => ['required', Rule::enum(FundingSource::class)],
+            'source' => ['required', Rule::enum(FundingSourceEnum::class)],
         ];
     }
 

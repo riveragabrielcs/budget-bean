@@ -4,7 +4,7 @@ namespace App\Repositories\WaterBank;
 
 use App\DTOs\WaterBankDTO;
 use App\DTOs\WaterBankTransactionDTO;
-use App\Enums\WaterBankSource;
+use App\Enums\WaterBankSourceEnum;
 use App\Models\User;
 use Illuminate\Support\Collection;
 
@@ -31,11 +31,11 @@ interface WaterBankRepositoryInterface
      *
      * @param User|null $user
      * @param float $amount
-     * @param WaterBankSource $source
+     * @param WaterBankSourceEnum $source
      * @param string|null $description
      * @return WaterBankTransactionDTO
      */
-    public function addWater(?User $user, float $amount, WaterBankSource $source, ?string $description = null): WaterBankTransactionDTO;
+    public function addWater(?User $user, float $amount, WaterBankSourceEnum $source, ?string $description = null): WaterBankTransactionDTO;
 
     /**
      * Use water from the bank.
@@ -43,10 +43,10 @@ interface WaterBankRepositoryInterface
      * @param User|null $user
      * @param float $amount
      * @param int $savingsGoalId
-     * @param WaterBankSource $source
+     * @param WaterBankSourceEnum $source
      * @return WaterBankTransactionDTO
      */
-    public function useWater(?User $user, float $amount, int $savingsGoalId, WaterBankSource $source = WaterBankSource::PLANT_WATERING): WaterBankTransactionDTO;
+    public function useWater(?User $user, float $amount, int $savingsGoalId, WaterBankSourceEnum $source = WaterBankSourceEnum::PLANT_WATERING): WaterBankTransactionDTO;
 
     /**
      * Get recent transactions for water bank.

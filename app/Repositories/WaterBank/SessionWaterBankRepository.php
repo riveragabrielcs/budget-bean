@@ -4,8 +4,8 @@ namespace App\Repositories\WaterBank;
 
 use App\DTOs\WaterBankDTO;
 use App\DTOs\WaterBankTransactionDTO;
-use App\Enums\WaterBankSource;
-use App\Enums\WaterBankTransactionType;
+use App\Enums\WaterBankSourceEnum;
+use App\Enums\WaterBankTransactionTypeEnum;
 use App\Exceptions\InsufficientWaterException;
 use App\Models\User;
 use Illuminate\Support\Collection;
@@ -44,7 +44,7 @@ class SessionWaterBankRepository implements WaterBankRepositoryInterface
     /**
      * Add water to the bank.
      */
-    public function addWater(?User $user, float $amount, WaterBankSource $source, ?string $description = null): WaterBankTransactionDTO
+    public function addWater(?User $user, float $amount, WaterBankSourceEnum $source, ?string $description = null): WaterBankTransactionDTO
     {
         $waterBank = session(self::SESSION_KEY, [
             'id' => 1,
@@ -61,7 +61,7 @@ class SessionWaterBankRepository implements WaterBankRepositoryInterface
         session([self::SESSION_KEY => $waterBank]);
 
         $transaction = $this->createTransaction(
-            WaterBankTransactionType::DEPOSIT,
+            WaterBankTransactionTypeEnum::DEPOSIT,
             $amount,
             $source,
             $description,
@@ -75,7 +75,7 @@ class SessionWaterBankRepository implements WaterBankRepositoryInterface
     /**
      * Use water from the bank.
      */
-    public function useWater(?User $user, float $amount, int $savingsGoalId, WaterBankSource $source = WaterBankSource::PLANT_WATERING): WaterBankTransactionDTO
+    public function useWater(?User $user, float $amount, int $savingsGoalId, WaterBankSourceEnum $source = WaterBankSourceEnum::PLANT_WATERING): WaterBankTransactionDTO
     {
         $waterBank = session(self::SESSION_KEY, [
             'id' => 1,
@@ -96,7 +96,7 @@ class SessionWaterBankRepository implements WaterBankRepositoryInterface
         session([self::SESSION_KEY => $waterBank]);
 
         $transaction = $this->createTransaction(
-            WaterBankTransactionType::WITHDRAWAL,
+            WaterBankTransactionTypeEnum::WITHDRAWAL,
             $amount,
             $source,
             null,
@@ -143,12 +143,12 @@ class SessionWaterBankRepository implements WaterBankRepositoryInterface
      * Create a transaction and store in session.
      */
     private function createTransaction(
-        WaterBankTransactionType $type,
-        float $amount,
-        WaterBankSource $source,
-        ?string $description,
-        ?int $savingsGoalId,
-        float $balanceAfter
+        WaterBankTransactionTypeEnum $type,
+        float                        $amount,
+        WaterBankSourceEnum          $source,
+        ?string                      $description,
+        ?int                         $savingsGoalId,
+        float                        $balanceAfter
     ): WaterBankTransactionDTO {
         $transactions = session(self::TRANSACTIONS_KEY, []);
 
@@ -220,9 +220,9 @@ class SessionWaterBankRepository implements WaterBankRepositoryInterface
         return new WaterBankTransactionDTO(
             id: $transaction['id'],
             water_bank_id: $transaction['water_bank_id'],
-            type: WaterBankTransactionType::from($transaction['type']),
+            type: WaterBankTransactionTypeEnum::from($transaction['type']),
             amount: $transaction['amount'],
-            source: WaterBankSource::from($transaction['source']),
+            source: WaterBankSourceEnum::from($transaction['source']),
             description: $transaction['description'],
             savings_goal_id: $transaction['savings_goal_id'],
             balance_after: $transaction['balance_after'],

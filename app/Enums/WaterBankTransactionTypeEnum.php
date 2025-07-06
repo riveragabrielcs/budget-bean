@@ -2,7 +2,7 @@
 
 namespace App\Enums;
 
-enum WaterBankTransactionType: string
+enum WaterBankTransactionTypeEnum: string
 {
     case DEPOSIT = 'deposit';
     case WITHDRAWAL = 'withdrawal';

@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use App\Enums\WaterBankSource;
-use App\Enums\WaterBankTransactionType;
+use App\Enums\WaterBankSourceEnum;
+use App\Enums\WaterBankTransactionTypeEnum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -34,8 +34,8 @@ class WaterBankTransaction extends Model
     protected function casts(): array
     {
         return [
-            'type' => WaterBankTransactionType::class,
-            'source' => WaterBankSource::class,
+            'type' => WaterBankTransactionTypeEnum::class,
+            'source' => WaterBankSourceEnum::class,
             'amount' => 'decimal:2',
             'balance_after' => 'decimal:2',
         ];
@@ -83,7 +83,7 @@ class WaterBankTransaction extends Model
             return $this->description;
         }
 
-        if ($this->type === WaterBankTransactionType::WITHDRAWAL && $this->savingsGoal) {
+        if ($this->type === WaterBankTransactionTypeEnum::WITHDRAWAL && $this->savingsGoal) {
             return "Watered {$this->savingsGoal->name}";
         }
 

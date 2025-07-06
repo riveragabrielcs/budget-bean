@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\SavingsGoal;
 
-use App\Enums\FundingSource;
+use App\Enums\FundingSourceEnum;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -25,7 +25,7 @@ class AddSavingsRequest extends FormRequest
     {
         return [
             'amount' => 'required|numeric|min:0.01|max:9999999.99',
-            'source' => ['required', Rule::enum(FundingSource::class)],
+            'source' => ['required', Rule::enum(FundingSourceEnum::class)],
         ];
     }
 

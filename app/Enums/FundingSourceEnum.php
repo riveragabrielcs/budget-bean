@@ -2,7 +2,7 @@
 
 namespace App\Enums;
 
-enum FundingSource: string
+enum FundingSourceEnum: string
 {
     case WATER_BANK = 'water_bank';
     case OTHER = 'other';
