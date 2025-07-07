@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature;
+namespace Tests\Feature\WaterBank;
 
 use App\Data\AddManualWaterData;
 use App\Data\WaterGoalData;
@@ -10,7 +10,7 @@ use App\Services\WaterBankService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-class WaterGoalOverflowTest extends TestCase
+class WaterGoalServiceTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -140,6 +140,82 @@ class WaterGoalOverflowTest extends TestCase
 
         $this->assertEquals(200.00, $result['actual_amount_used']);
         $this->assertEquals(0.00, $result['amount_returned']);
+    }
+
+    #[\PHPUnit\Framework\Attributes\Test]
+    public function it_throws_exception_when_user_has_insufficient_water()
+    {
+        // ARRANGE: Create goal and add insufficient water
+        $goal = $this->createGoal('Expensive Car', 10000.00);
+        $this->addWaterToBank(100.00, 'Small amount of water');
+
+        // Verify initial state
+        $this->assertEquals(100.00, $this->getWaterBankBalance());
+
+        // ACT & ASSERT: Expect InsufficientWaterException when trying to use more than available
+        $this->expectException(\App\Exceptions\InsufficientWaterException::class);
+
+        $this->waterBankService->waterGoal(
+            $this->user,
+            $goal->id,
+            new WaterGoalData(500.00, FundingSourceEnum::WATER_BANK) // Trying to use $500 but only have $100
+        );
+
+        // These assertions should not be reached if exception is thrown correctly
+        // But let's verify the state wasn't changed
+        $goal->refresh();
+        $this->assertEquals(0.00, $goal->current_amount, 'Goal should not be modified when exception occurs');
+        $this->assertEquals(100.00, $this->getWaterBankBalance(), 'Water bank should not be modified when exception occurs');
+    }
+
+    #[\PHPUnit\Framework\Attributes\Test]
+    public function it_throws_exception_when_goal_does_not_exist()
+    {
+        // ARRANGE: Add water but don't create the goal
+        $this->addWaterToBank(1000.00, 'Plenty of water');
+        $nonExistentGoalId = 999; // Goal that doesn't exist
+
+        // ACT & ASSERT: Expect SavingsGoalNotFoundException
+        $this->expectException(\App\Exceptions\SavingsGoalNotFoundException::class);
+
+        $this->waterBankService->waterGoal(
+            $this->user,
+            $nonExistentGoalId,
+            new WaterGoalData(100.00, FundingSourceEnum::WATER_BANK)
+        );
+
+        // Water bank should not be modified when exception occurs
+        $this->assertEquals(1000.00, $this->getWaterBankBalance(), 'Water bank should not be modified when goal not found');
+    }
+
+    #[\PHPUnit\Framework\Attributes\Test]
+    public function it_throws_exception_when_trying_to_water_another_users_goal()
+    {
+        // ARRANGE: Create another user with their own goal
+        $otherUser = User::factory()->create();
+        $otherUsersGoal = $otherUser->savingsGoals()->create([
+            'name' => 'Other Users Goal',
+            'target_amount' => 500.00,
+            'current_amount' => 0.00,
+            'is_completed' => false,
+        ]);
+
+        // Current user has water
+        $this->addWaterToBank(1000.00, 'My water');
+
+        // ACT & ASSERT: Current user tries to water other user's goal
+        $this->expectException(\App\Exceptions\SavingsGoalNotFoundException::class);
+
+        $this->waterBankService->waterGoal(
+            $this->user, // Current user
+            $otherUsersGoal->id, // But other user's goal!
+            new WaterGoalData(100.00, FundingSourceEnum::WATER_BANK)
+        );
+
+        // Neither user's state should be modified
+        $this->assertEquals(1000.00, $this->getWaterBankBalance(), 'Current user water should be unchanged');
+        $otherUsersGoal->refresh();
+        $this->assertEquals(0.00, $otherUsersGoal->current_amount, 'Other users goal should be unchanged');
     }
 
     #[\PHPUnit\Framework\Attributes\Test]
