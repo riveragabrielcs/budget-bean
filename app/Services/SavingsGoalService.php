@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Data\AddSavingsData;
 use App\Data\SavingsGoalData;
+use App\Data\WaterGoalData;
 use App\DTOs\SavingsGoalDTO;
 use App\Enums\FundingSourceEnum;
 use App\Enums\WaterBankSourceEnum;
@@ -22,7 +23,8 @@ class SavingsGoalService
 {
     public function __construct(
         private SavingsGoalRepositoryInterface $savingsGoalRepo,
-        private WaterBankRepositoryInterface $waterBankRepo
+        private WaterBankRepositoryInterface $waterBankRepo,
+        private WaterBankService $waterBankService
     ) {}
 
     /**
@@ -275,16 +277,16 @@ class SavingsGoalService
             throw new \InvalidArgumentException('Water bank is only available for authenticated users');
         }
 
-        if (!$this->waterBankRepo->hasEnoughWater($user, $data->amount)) {
-            throw new InsufficientWaterException();
-        }
+        $waterGoalData = new WaterGoalData(
+            amount: $data->amount,
+            source: $data->source
+        );
 
-        $this->waterBankRepo->useWater($user, $data->amount, $goalId, WaterBankSourceEnum::PLANT_WATERING);
-        $updatedGoal = $this->savingsGoalRepo->addSavings($user, $goalId, $data->amount);
+        $result = $this->waterBankService->waterGoal($user, $goalId, $waterGoalData);
 
         return [
-            'goal' => $updatedGoal,
-            'message' => "Watered {$goalName} with $" . number_format($data->amount, 2) . " from your Water Bank! 🌱💧"
+            'goal' => $result['goal'],
+            'message' => $result['message']
         ];
     }
 

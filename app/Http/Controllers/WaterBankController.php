@@ -63,7 +63,7 @@ class WaterBankController extends Controller
             $user = auth()->user();
             $data = new WaterGoalData(
                 amount: $request->validated('amount'),
-                source: $request->validated('source')
+                source: FundingSourceEnum::from($request->validated('source'))
             );
 
             $result = $this->waterBankService->waterGoal($user, $savingsGoal->id, $data);
