@@ -51,7 +51,7 @@ class RecurringBillController extends Controller
             ]);
         }
 
-        return Inertia::render('Bills/MyRecurringBills', [
+        return Inertia::render('Bills/BillsIndex', [
             'recurringBills' => $formattedBills,
             'stats' => $stats,
         ]);

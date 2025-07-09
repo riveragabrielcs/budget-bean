@@ -66,7 +66,7 @@ class SavingsGoalController extends Controller
             ]);
         }
 
-        return Inertia::render('Garden/MyGarden', [
+        return Inertia::render('Garden/GardenIndex', [
             'savingsGoals' => $formattedGoals,
             'stats' => $stats,
             'waterBank' => $waterBankData,

@@ -509,7 +509,7 @@ const getGrowthColor = (change) => {
                             class="flex-1 bg-red-500 hover:bg-red-600 text-white font-medium py-3 px-4 rounded-lg transition duration-200 disabled:opacity-50"
                         >
                             <span v-if="deleteForm.processing">Deleting...</span>
-                            <span v-else">🗑️ Delete Month</span>
+                            <span v-else>🗑️ Delete Month</span>
                         </button>
                     </div>
                 </div>

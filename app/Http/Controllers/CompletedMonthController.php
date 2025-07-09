@@ -71,7 +71,7 @@ class CompletedMonthController extends Controller
             'drought_months' => $completedMonths->where('was_drought', true)->count(),
         ];
 
-        return Inertia::render('PastMonths/Index', [
+        return Inertia::render('PastMonths/PastMonthsIndex', [
             'completedMonths' => $completedMonths,
             'stats' => $stats,
         ]);
@@ -120,7 +120,7 @@ class CompletedMonthController extends Controller
             'completed_at' => $completedMonth->created_at->format('M j, Y \a\t g:i A'),
         ];
 
-        return Inertia::render('PastMonths/Show', [
+        return Inertia::render('PastMonths/PastMonthsShow', [
             'completedMonth' => $monthData,
         ]);
     }
