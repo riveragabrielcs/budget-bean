@@ -16,6 +16,6 @@ class DashboardController extends Controller
         $user = auth()->user();
         $dashboardDTO = $dashboardService->getDashboardSummary($user);
 
-        return Inertia::render('Dashboard', $dashboardDTO->toArray());
+        return Inertia::render('Dashboard/DashboardIndex', $dashboardDTO->toArray());
     }
 }
