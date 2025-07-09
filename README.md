@@ -136,7 +136,7 @@ Traditional budgeting apps are boring and feel like homework. BudgetBean makes f
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/riveragabrielcs/budgetbean.git
+   git clone https://github.com/riveragabrielcs/budget-bean
    cd budgetbean
    ```
 
