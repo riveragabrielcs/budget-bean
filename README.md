@@ -301,7 +301,7 @@ resources/js/
 ├── Components/        # Reusable Vue components
 ├── Layouts/          # Application layouts
 ├── Pages/            # Inertia.js page components
-└── composables/      # Vue composition utilities
+└── Composables/      # Vue composition utilities
 ```
 
 ## 🏗️ Architecture Decisions

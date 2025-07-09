@@ -7,7 +7,7 @@ import NavLink from '@/Components/NavLink.vue';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
 import FlashMessage from '@/Components/FlashMessage.vue';
 import {Link} from '@inertiajs/vue3';
-import {useAuthGuard} from '@/composables/useAuthGuard'
+import {useAuthGuard} from '@/Composables/useAuthGuard'
 import AuthRequiredModal from '@/Components/AuthRequiredModal.vue'
 
 const {requireAuth, showAuthModal, closeAuthModal} = useAuthGuard()

@@ -3,8 +3,8 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import NavLink from '@/Components/NavLink.vue';
 import {Head, useForm, router, usePage} from '@inertiajs/vue3';
 import {computed, ref, watch} from 'vue';
-import {useExpenseTypes} from '@/composables/useExpenseTypes';
-import { useAuthGuard } from '@/composables/useAuthGuard'
+import {useExpenseTypes} from '@/Composables/useExpenseTypes';
+import { useAuthGuard } from '@/Composables/useAuthGuard'
 import AuthRequiredModal from '@/Components/AuthRequiredModal.vue'
 
 
