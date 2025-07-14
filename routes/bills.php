@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Route;
 // Recurring Bills management routes
 // -----------------------------------
 
-// Auth / Account Required
+// Public Routes
 Route::prefix('bills')->name('bills.')->group(function () {
     Route::get('/', [RecurringBillController::class, 'index'])->name('index');
     Route::post('/', [RecurringBillController::class, 'store'])->name('store');
